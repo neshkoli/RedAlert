@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-08T14:42:12.182Z",
+  "generatedAt": "2026-03-08T14:55:27.322Z",
   "api": {
     "source": "pikud-haoref-api.getActiveAlerts",
-    "error": null
+    "error": "Failed to retrieve alerts from HFC API: AxiosError: Request failed with status code 403"
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "אביבים"
-      ],
-      "instructions": "האירוע הסתיים",
-      "id": "134174545180000000"
-    }
-  ]
+  "alerts": []
 }
