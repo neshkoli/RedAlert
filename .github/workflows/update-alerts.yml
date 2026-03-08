@@ -1,0 +1,42 @@
+name: Update Alert Data
+
+on:
+  schedule:
+    # GitHub minimum: every 1 minute. Runs on UTC.
+    - cron: "* * * * *"
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch the branch so we can push back
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build alert data
+        run: npm run build:data
+
+      - name: Commit updated data files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f public/data/active-alerts.json public/data/zones-lookup.json
+          # Only commit if there are staged changes
+          git diff --cached --quiet || git commit -m "chore: update alert data [skip ci]"
+          git push
