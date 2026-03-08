@@ -1,10 +1,13 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
 const REFRESH_MS = 5000;
 const ENDED_TTL_MS = 60 * 1000;
+const STALE_ALERT_MS = 15 * 60 * 1000;
+const MAX_HISTORY_ITEMS = 1000;
 const CIRCLE_RADIUS_METERS = 1500;
 const MAX_VISIBLE_CITIES_IN_CARD = 8;
 const STORAGE_KEY = "pikud_selected_locations_v1";
 const ALERT_SETTINGS_KEY = "pikud_alert_settings_v1";
+const ALERTS_STATE_KEY = "pikud_alerts_state_v1";
 const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "true";
 const TEST_ALERT_TYPES = [
   "missiles",
@@ -66,6 +69,228 @@ function normalizeName(value) {
 
 function isNewsFlash(type) {
   return type === "newsFlash" || type === "earlyWarning";
+}
+
+// ---------------------------------------------------------------------------
+// Alert state management (runs in-browser, persisted to localStorage)
+// ---------------------------------------------------------------------------
+
+function isEndedInstruction(instructions) {
+  return normalizeName(instructions) === "האירוע הסתיים";
+}
+
+function isNewsFlashType(type) {
+  return type === "newsFlash" || type === "earlyWarning";
+}
+
+function typePriority(type) {
+  return isNewsFlashType(type) ? 1 : 2;
+}
+
+function zonePriority(candidate) {
+  const stateBias = candidate.state === "ended" ? -100 : 0;
+  return typePriority(candidate.alertType) + stateBias;
+}
+
+function pickCurrentZones(alerts) {
+  const byName = {};
+  for (const alert of alerts || []) {
+    const alertType = alert && alert.type ? alert.type : "unknown";
+    const instructions = alert && alert.instructions ? alert.instructions : null;
+    const isEnded = isEndedInstruction(instructions);
+    const cities = Array.isArray(alert && alert.cities) ? alert.cities : [];
+
+    for (const city of cities) {
+      const key = normalizeName(city);
+      if (!key) continue;
+      const candidate = {
+        name: city,
+        normalizedName: key,
+        alertType,
+        state: isEnded ? "ended" : "active",
+        alertId: alert.id || null,
+        instructions,
+      };
+      const existing = byName[key];
+      if (!existing || zonePriority(candidate) > zonePriority(existing)) {
+        byName[key] = candidate;
+      }
+    }
+  }
+  return byName;
+}
+
+function getHistorySignature(item) {
+  return [
+    normalizeName(item.name),
+    item.state || "unknown",
+    item.alertType || "unknown",
+    normalizeName(item.instructions || ""),
+  ].join("|");
+}
+
+function upsertHistoryEvents(previousHistory, incomingEvents) {
+  const bySignature = new Map();
+
+  for (const item of previousHistory || []) {
+    if (!item) continue;
+    bySignature.set(getHistorySignature(item), { ...item });
+  }
+
+  for (const item of incomingEvents || []) {
+    if (!item) continue;
+    const key = getHistorySignature(item);
+    const existing = bySignature.get(key);
+    if (!existing) {
+      bySignature.set(key, { ...item });
+      continue;
+    }
+    const existingTs = new Date(existing.timestamp || 0).getTime();
+    const incomingTs = new Date(item.timestamp || 0).getTime();
+    if (incomingTs >= existingTs) {
+      bySignature.set(key, { ...existing, ...item, timestamp: item.timestamp });
+    }
+  }
+
+  const sorted = Array.from(bySignature.values()).sort((a, b) => {
+    return new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime();
+  });
+
+  return sorted.slice(0, MAX_HISTORY_ITEMS);
+}
+
+function mergeZoneStates(currentByName, previousZones, previousHistory, lookupByName) {
+  const merged = [];
+  const seen = new Set();
+  const newHistory = [];
+  const now = Date.now();
+  const nowISO = new Date(now).toISOString();
+
+  const previousByName = {};
+  for (const z of previousZones || []) {
+    if (!z || !z.normalizedName) continue;
+    previousByName[z.normalizedName] = z;
+  }
+
+  function hasRecentHistoryEvent(zone, eventState, lookbackMs) {
+    const history = previousHistory || [];
+    const targetName = normalizeName(zone.name);
+    const targetType = zone.alertType || "unknown";
+    const targetInstructions = normalizeName(zone.instructions);
+    for (let i = history.length - 1; i >= 0; i -= 1) {
+      const item = history[i];
+      if (!item) continue;
+      const itemTs = new Date(item.timestamp || 0).getTime();
+      if (!itemTs || now - itemTs > lookbackMs) break;
+      if (
+        normalizeName(item.name) === targetName &&
+        item.state === eventState &&
+        (item.alertType || "unknown") === targetType &&
+        normalizeName(item.instructions) === targetInstructions
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function pushHistoryEvent(zone, eventState, reason) {
+    newHistory.push({
+      timestamp: nowISO,
+      name: zone.name,
+      normalizedName: zone.normalizedName,
+      alertType: zone.alertType || "unknown",
+      state: eventState,
+      instructions: zone.instructions || null,
+      reason: reason || null,
+      lat: zone.lat != null ? zone.lat : null,
+      lng: zone.lng != null ? zone.lng : null,
+    });
+  }
+
+  for (const key of Object.keys(currentByName)) {
+    const current = currentByName[key];
+    const prev = previousByName[key];
+    const lookup = lookupByName ? lookupByName[key] : null;
+    const currentIsEnded = current.state === "ended";
+    seen.add(key);
+
+    if (currentIsEnded) {
+      if (!prev || prev.state !== "ended") {
+        const historyZone = {
+          ...current,
+          lat: lookup ? lookup.lat : prev && prev.lat != null ? prev.lat : null,
+          lng: lookup ? lookup.lng : prev && prev.lng != null ? prev.lng : null,
+        };
+        if (!hasRecentHistoryEvent(historyZone, "ended", 30 * 60 * 1000)) {
+          pushHistoryEvent(historyZone, "ended", "ended_instruction");
+        }
+      }
+      continue;
+    }
+
+    const prevState = prev ? prev.state : null;
+    const prevType = prev ? prev.alertType : null;
+    const prevInstructions = prev ? normalizeName(prev.instructions) : "";
+    const currInstructions = normalizeName(current.instructions);
+    const isNewEvent =
+      !prev ||
+      prevState !== "active" ||
+      prevType !== current.alertType ||
+      prevInstructions !== currInstructions;
+
+    const zone = {
+      ...current,
+      state: "active",
+      startedAt: prev && prev.state === "active" && prev.startedAt ? prev.startedAt : nowISO,
+      endedAt: null,
+      lastSeenAt: nowISO,
+      lat: lookup ? lookup.lat : prev && prev.lat != null ? prev.lat : null,
+      lng: lookup ? lookup.lng : prev && prev.lng != null ? prev.lng : null,
+      zone: lookup ? lookup.zone : prev && prev.zone ? prev.zone : null,
+    };
+
+    merged.push(zone);
+    if (isNewEvent) {
+      pushHistoryEvent(zone, "active", "new_or_changed");
+    }
+  }
+
+  for (const key of Object.keys(previousByName)) {
+    if (seen.has(key)) continue;
+    const prev = previousByName[key];
+    if (prev.state !== "active") continue;
+
+    const lastSeenAtMs = new Date(prev.lastSeenAt || prev.startedAt || 0).getTime();
+    if (lastSeenAtMs > 0 && now - lastSeenAtMs <= STALE_ALERT_MS) {
+      merged.push(prev);
+      continue;
+    }
+    pushHistoryEvent(prev, "expired", "stale_timeout_15m");
+  }
+
+  return {
+    zones: merged,
+    history: upsertHistoryEvents(previousHistory || [], newHistory),
+  };
+}
+
+function loadAlertsState() {
+  try {
+    const raw = localStorage.getItem(ALERTS_STATE_KEY);
+    if (!raw) return { zones: [], history: [] };
+    return JSON.parse(raw);
+  } catch (_err) {
+    return { zones: [], history: [] };
+  }
+}
+
+function saveAlertsState(zonesAndHistory) {
+  try {
+    localStorage.setItem(ALERTS_STATE_KEY, JSON.stringify(zonesAndHistory));
+  } catch (_err) {
+    // localStorage full or unavailable — skip silently
+  }
 }
 
 function getAlertTypeLabel(type) {
@@ -772,11 +997,37 @@ function setupDebugUI() {
 
 async function refresh() {
   try {
-    const [lookupPayload, alertsPayload] = await Promise.all([
+    const [lookupPayload, rawPayload] = await Promise.all([
       fetchJson("./data/zones-lookup.json"),
-      fetchJson("./data/active-alerts.json"),
+      fetchJson("./data/raw-alerts.json"),
     ]);
     state.zonesLookup = Array.isArray(lookupPayload.cities) ? lookupPayload.cities : [];
+
+    // Build a fast lookup map from city name → entry
+    const lookupByName = {};
+    for (const city of state.zonesLookup) {
+      if (city && city.normalizedName) lookupByName[city.normalizedName] = city;
+    }
+
+    // Merge raw API alerts with previous local state
+    const previousState = loadAlertsState();
+    const currentByName = pickCurrentZones(rawPayload.alerts || []);
+    const mergedResult = mergeZoneStates(
+      currentByName,
+      previousState.zones || [],
+      previousState.history || [],
+      lookupByName
+    );
+
+    const alertsPayload = {
+      generatedAt: rawPayload.generatedAt,
+      api: rawPayload.api,
+      alerts: rawPayload.alerts,
+      zones: mergedResult.zones,
+      history: mergedResult.history,
+    };
+
+    saveAlertsState({ zones: mergedResult.zones, history: mergedResult.history });
     state.alertsPayload = alertsPayload;
 
     const payloadToRender = state.testMode && state.testPayload ? state.testPayload : alertsPayload;
