@@ -1115,6 +1115,7 @@ function createTestPayload() {
         alertType: zone.alertType,
         state: zone.state,
         instructions: zone.instructions,
+        zone: zone.zone || null,
         lat: zone.lat,
         lng: zone.lng,
       });
