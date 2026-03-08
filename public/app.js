@@ -61,6 +61,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 state.markerLayer = L.layerGroup().addTo(map);
+window._leafletMap = map;
 
 function normalizeName(value) {
   return String(value || "")
@@ -640,8 +641,8 @@ function ensureNotificationPermission() {
   }
 }
 
-function playWarningSound() {
-  if (!state.alertSettings.soundEnabled) return;
+function playWarningSound(force = false) {
+  if (!force && !state.alertSettings.soundEnabled) return;
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -1146,6 +1147,92 @@ function pickRandomUniqueCities(candidates, count) {
   return copy.slice(0, count);
 }
 
+function initPanelResizer() {
+  const resizer = document.getElementById("panelResizer");
+  const layout = document.querySelector(".layout");
+  const leftPanel = document.querySelector(".left-panel");
+  const rightPanel = document.querySelector(".right-panel");
+  if (!resizer || !layout || !leftPanel || !rightPanel) return;
+
+  let dragging = false;
+  let startPos = 0;
+  let startLeftSize = 0;
+  let startRightSize = 0;
+  let isMobile = false;
+
+  function onStart(pos, mobile) {
+    dragging = true;
+    isMobile = mobile;
+    startPos = pos;
+    if (mobile) {
+      startLeftSize = leftPanel.getBoundingClientRect().height;
+      startRightSize = rightPanel.getBoundingClientRect().height;
+    } else {
+      startLeftSize = leftPanel.getBoundingClientRect().width;
+      startRightSize = rightPanel.getBoundingClientRect().width;
+    }
+    resizer.classList.add("dragging");
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = mobile ? "row-resize" : "col-resize";
+  }
+
+  function onMove(pos) {
+    if (!dragging) return;
+    const delta = pos - startPos;
+    const total = startLeftSize + startRightSize;
+    if (isMobile) {
+      const newLeft = Math.min(Math.max(startLeftSize + delta, 80), total - 80);
+      const newRight = total - newLeft;
+      leftPanel.style.flex = "none";
+      leftPanel.style.height = newLeft + "px";
+      rightPanel.style.flex = "none";
+      rightPanel.style.height = newRight + "px";
+    } else {
+      const newLeft = Math.min(Math.max(startLeftSize + delta, 200), total - 200);
+      const newRight = total - newLeft;
+      leftPanel.style.flex = "none";
+      leftPanel.style.width = newLeft + "px";
+      rightPanel.style.flex = "none";
+      rightPanel.style.width = newRight + "px";
+    }
+    // Invalidate Leaflet map size after resize
+    if (window._leafletMap) window._leafletMap.invalidateSize();
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove("dragging");
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    if (window._leafletMap) window._leafletMap.invalidateSize();
+  }
+
+  // Mouse events
+  resizer.addEventListener("mousedown", (e) => {
+    const mobile = window.innerWidth <= 900;
+    onStart(mobile ? e.clientY : e.clientX, mobile);
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", (e) => onMove(isMobile ? e.clientY : e.clientX));
+  document.addEventListener("mouseup", onEnd);
+
+  // Touch events
+  resizer.addEventListener("touchstart", (e) => {
+    const mobile = window.innerWidth <= 900;
+    const touch = e.touches[0];
+    onStart(mobile ? touch.clientY : touch.clientX, mobile);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("touchmove", (e) => {
+    if (!dragging) return;
+    const touch = e.touches[0];
+    onMove(isMobile ? touch.clientY : touch.clientX);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("touchend", onEnd);
+}
+
 function wireEvents() {
   document.getElementById("addLocationBtn").addEventListener("click", () => {
     const input = document.getElementById("locationInput");
@@ -1204,14 +1291,34 @@ function wireEvents() {
   }
 
   const settingsToggleBtn = document.getElementById("settingsToggleBtn");
-  if (settingsToggleBtn) {
-    settingsToggleBtn.addEventListener("click", () => {
-      const settingsCard = document.querySelector(".settings-card");
-      if (settingsCard) {
-        settingsCard.classList.toggle("mobile-visible");
+  const gearDropdown = document.getElementById("gearDropdown");
+  if (settingsToggleBtn && gearDropdown) {
+    settingsToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      gearDropdown.classList.toggle("hidden");
+      // On mobile also toggle the settings card
+      const isMobile = window.innerWidth <= 900;
+      if (isMobile) {
+        const settingsCard = document.querySelector(".settings-card");
+        if (settingsCard) settingsCard.classList.toggle("mobile-visible");
+      }
+    });
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!settingsToggleBtn.contains(e.target) && !gearDropdown.contains(e.target)) {
+        gearDropdown.classList.add("hidden");
       }
     });
   }
+
+  const testSoundBtn = document.getElementById("testSoundBtn");
+  if (testSoundBtn) {
+    testSoundBtn.addEventListener("click", () => {
+      playWarningSound(true);
+    });
+  }
+
+  initPanelResizer();
 }
 
 function isFileProtocol() {

@@ -18,10 +18,24 @@
       <section class="left-panel">
         <div id="map"></div>
       </section>
+      <div class="panel-resizer" id="panelResizer" title="גרור לשינוי גודל"></div>
       <aside class="right-panel">
         <div class="panel-header">
           <h1>התראות פיקוד העורף</h1>
-          <button id="settingsToggleBtn" class="settings-toggle-btn" type="button" title="הגדרות" aria-label="הגדרות">⚙</button>
+          <div class="gear-wrapper">
+            <button id="settingsToggleBtn" class="settings-toggle-btn" type="button" title="הגדרות" aria-label="הגדרות">⚙</button>
+            <div id="gearDropdown" class="gear-dropdown hidden">
+              <label class="toggle-item">
+                <input id="soundToggle" type="checkbox" checked />
+                <span>צליל</span>
+              </label>
+              <label class="toggle-item">
+                <input id="notificationToggle" type="checkbox" checked />
+                <span>התראות</span>
+              </label>
+              <button id="testSoundBtn" class="gear-dropdown-btn" type="button">בדוק צליל</button>
+            </div>
+          </div>
         </div>
         <p id="statusLine">טוען נתונים...</p>
 
@@ -31,16 +45,6 @@
             <input id="locationInput" list="cityOptions" placeholder="הקלד שם עיר" />
             <datalist id="cityOptions"></datalist>
             <button id="addLocationBtn" type="button">הוסף</button>
-          </div>
-          <div class="toggles-row">
-            <label class="toggle-item">
-              <input id="soundToggle" type="checkbox" checked />
-              <span>הפעל/כבה צליל</span>
-            </label>
-            <label class="toggle-item">
-              <input id="notificationToggle" type="checkbox" checked />
-              <span>הפעל/כבה Notification</span>
-            </label>
           </div>
           <div id="selectedLocations" class="tags"></div>
         </section>
