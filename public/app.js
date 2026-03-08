@@ -970,7 +970,7 @@ function updateStatus(payload, visibleZones) {
   const el = document.getElementById("statusLine");
   const activeCount = visibleZones.filter((z) => z.state === "active").length;
   const historyCount = Array.isArray(payload.history) ? payload.history.length : 0;
-  const apiError = payload.api && payload.api.error ? ` | שגיאת API: ${payload.api.error}` : "";
+  const apiError = DEBUG_MODE && payload.api && payload.api.error ? ` | שגיאת API: ${payload.api.error}` : "";
   const testModeText = state.testMode ? " | מצב בדיקה פעיל" : "";
   el.textContent = `עודכן: ${formatIso(payload.generatedAt)} | פעיל במפה: ${activeCount} | היסטוריה: ${historyCount}${apiError}${testModeText}`;
 }
