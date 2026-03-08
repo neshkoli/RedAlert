@@ -481,8 +481,8 @@ h2 {
 
   /* Gear dropdown opens upward on mobile to avoid going off screen */
   .gear-dropdown {
-    top: auto;
-    bottom: calc(100% + 6px);
+    top: calc(100% + 6px);
+    bottom: auto;
     left: 0;
   }
 }
