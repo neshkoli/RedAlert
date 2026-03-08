@@ -19,10 +19,13 @@
         <div id="map"></div>
       </section>
       <aside class="right-panel">
-        <h1>התראות פיקוד העורף</h1>
+        <div class="panel-header">
+          <h1>התראות פיקוד העורף</h1>
+          <button id="settingsToggleBtn" class="settings-toggle-btn" type="button" title="הגדרות" aria-label="הגדרות">⚙</button>
+        </div>
         <p id="statusLine">טוען נתונים...</p>
 
-        <section class="card">
+        <section class="card settings-card">
           <h2>הגדרות מיקום</h2>
           <div class="location-row">
             <input id="locationInput" list="cityOptions" placeholder="הקלד שם עיר" />

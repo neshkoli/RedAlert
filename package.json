@@ -8,8 +8,7 @@
     "test:api": "node scripts/test-api.js",
     "build:data": "node scripts/build-static-data.js",
     "serve:static": "node scripts/serve-static.js",
-    "web": "AUTO_REFRESH_SECONDS=5 npm run serve:static",
-    "web:manual": "npm run build:data && npm run serve:static"
+    "web": "npm run serve:static"
   },
   "dependencies": {
     "pikud-haoref-api": "github:eladnava/pikud-haoref-api"

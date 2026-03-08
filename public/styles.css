@@ -24,6 +24,7 @@ body {
 
 .left-panel {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #map {
@@ -294,14 +295,110 @@ h2 {
   fill: currentColor;
 }
 
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.panel-header h1 {
+  margin: 0;
+}
+
+.settings-toggle-btn {
+  display: none;
+  padding: 6px 10px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #1b1b1b;
+  color: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
 @media (max-width: 900px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   .layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 45vh auto;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+    height: 100dvh;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .left-panel {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  #map {
+    height: 100%;
   }
 
   .right-panel {
+    flex: 0 0 33.333%;
+    height: 33.333vh;
+    height: 33.333dvh;
+    min-height: 0;
+    overflow-y: auto;
     border-left: none;
-    border-top: 1px solid #2d2d2d;
+    border-top: 2px solid #2d2d2d;
+    padding: 10px 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .right-panel h1 {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+
+  #statusLine {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .card {
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+
+  .card h2 {
+    font-size: 13px;
+  }
+
+  /* Settings card hidden by default on mobile; shown when toggled */
+  .settings-card {
+    display: none;
+  }
+
+  .settings-card.mobile-visible {
+    display: block;
+  }
+
+  /* Show the gear button on mobile */
+  .settings-toggle-btn {
+    display: block;
+  }
+
+  /* Hide the API console card on mobile */
+  #apiConsoleCard {
+    display: none !important;
+  }
+
+  .alert-item {
+    padding: 6px 8px;
+  }
+
+  .meta {
+    font-size: 11px;
   }
 }

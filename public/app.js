@@ -1,4 +1,5 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
+const ALERTS_PROXY_URL = "https://redalert-proxy.neshkoli.workers.dev";
 const REFRESH_MS = 5000;
 const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
@@ -1012,7 +1013,7 @@ async function refresh() {
   try {
     const [lookupPayload, rawPayload] = await Promise.all([
       fetchJson("./data/zones-lookup.json"),
-      fetchJson("./data/raw-alerts.json"),
+      fetchJson(ALERTS_PROXY_URL),
     ]);
     state.zonesLookup = Array.isArray(lookupPayload.cities) ? lookupPayload.cities : [];
 
@@ -1199,6 +1200,16 @@ function wireEvents() {
       state.testMode = false;
       state.testPayload = null;
       refresh();
+    });
+  }
+
+  const settingsToggleBtn = document.getElementById("settingsToggleBtn");
+  if (settingsToggleBtn) {
+    settingsToggleBtn.addEventListener("click", () => {
+      const settingsCard = document.querySelector(".settings-card");
+      if (settingsCard) {
+        settingsCard.classList.toggle("mobile-visible");
+      }
     });
   }
 }
