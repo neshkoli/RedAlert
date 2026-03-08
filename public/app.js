@@ -4,6 +4,7 @@ const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
 const MAX_HISTORY_ITEMS = 1000;
 const CIRCLE_RADIUS_METERS = 1500;
+const CLUSTER_DISTANCE_METERS = 5000;
 const MAX_VISIBLE_CITIES_IN_CARD = 8;
 const STORAGE_KEY = "pikud_selected_locations_v1";
 const ALERT_SETTINGS_KEY = "pikud_alert_settings_v1";
@@ -387,7 +388,7 @@ function clusterZonesByDistance(zones) {
 
     for (const cluster of clusters) {
       const distance = getDistanceMeters(zone.lat, zone.lng, cluster.centerLat, cluster.centerLng);
-      if (distance <= CIRCLE_RADIUS_METERS && distance < bestDistance) {
+      if (distance <= CLUSTER_DISTANCE_METERS && distance < bestDistance) {
         target = cluster;
         bestDistance = distance;
       }
@@ -410,7 +411,7 @@ function clusterZonesByDistance(zones) {
     );
     const radius = Math.max(
       CIRCLE_RADIUS_METERS,
-      cluster.maxDistanceFromCenter + CIRCLE_RADIUS_METERS * 0.9
+      cluster.maxDistanceFromCenter + CIRCLE_RADIUS_METERS
     );
     return {
       zones: cluster.zones,
