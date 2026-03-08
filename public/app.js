@@ -1181,14 +1181,18 @@ function initPanelResizer() {
     const delta = pos - startPos;
     const total = startLeftSize + startRightSize;
     if (isMobile) {
-      const newLeft = Math.min(Math.max(startLeftSize + delta, 80), total - 80);
-      const newRight = total - newLeft;
+      // On mobile: alerts panel is on top (order:0), map below (order:2).
+      // Dragging down (positive delta) should shrink the alerts panel and grow the map.
+      const newRight = Math.min(Math.max(startRightSize - delta, 80), total - 80);
+      const newLeft = total - newRight;
       leftPanel.style.flex = "none";
       leftPanel.style.height = newLeft + "px";
       rightPanel.style.flex = "none";
       rightPanel.style.height = newRight + "px";
     } else {
-      const newLeft = Math.min(Math.max(startLeftSize + delta, 200), total - 200);
+      // On desktop: layout is RTL so dragging right (positive delta) should grow the right panel.
+      // Invert delta so dragging toward the right panel expands it.
+      const newLeft = Math.min(Math.max(startLeftSize - delta, 200), total - 200);
       const newRight = total - newLeft;
       leftPanel.style.flex = "none";
       leftPanel.style.width = newLeft + "px";
