@@ -11,6 +11,10 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: update-alerts
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -18,7 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Fetch the branch so we can push back
           ref: main
 
       - name: Setup Node.js
@@ -32,11 +35,10 @@ jobs:
       - name: Build alert data
         run: npm run build:data
 
-      - name: Commit updated data files
+      - name: Commit and push updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f public/data/raw-alerts.json public/data/zones-lookup.json
-          # Only commit if there are staged changes
-          git diff --cached --quiet || git commit -m "chore: update alert data [skip ci]"
-          git push
+          # Only commit + push if data actually changed
+          git diff --cached --quiet || git commit -m "chore: update alert data" && git push
