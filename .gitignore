@@ -5,3 +5,5 @@ yarn-error.log*
 .env
 .DS_Store
 logs/
+public/data/active-alerts.json
+public/data/zones-lookup.json
