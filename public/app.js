@@ -203,6 +203,7 @@ function mergeZoneStates(currentByName, previousZones, previousHistory, lookupBy
       state: eventState,
       instructions: zone.instructions || null,
       reason: reason || null,
+      zone: zone.zone || null,
       lat: zone.lat != null ? zone.lat : null,
       lng: zone.lng != null ? zone.lng : null,
     });
@@ -221,6 +222,7 @@ function mergeZoneStates(currentByName, previousZones, previousHistory, lookupBy
           ...current,
           lat: lookup ? lookup.lat : prev && prev.lat != null ? prev.lat : null,
           lng: lookup ? lookup.lng : prev && prev.lng != null ? prev.lng : null,
+          zone: lookup ? lookup.zone : prev && prev.zone ? prev.zone : null,
         };
         if (!hasRecentHistoryEvent(historyZone, "ended", 30 * 60 * 1000)) {
           pushHistoryEvent(historyZone, "ended", "ended_instruction");
@@ -549,12 +551,15 @@ function buildHistoryGroups(historyEvents) {
 
   for (const event of historyEvents || []) {
     const timestamp = event.timestamp || event.startedAt || null;
+    // Group by alert identity (type + instructions + state + reason + zone),
+    // so all cities in the same zone/alert collapse into one card.
+    const zoneName = event.zone || null;
     const keyParts = [
-      timestamp || "",
       event.state || "unknown",
       event.alertType || "unknown",
       normalizeName(event.instructions || ""),
       event.reason || "",
+      zoneName || "",
     ];
     const key = keyParts.join("|");
 
@@ -565,12 +570,19 @@ function buildHistoryGroups(historyEvents) {
         state: event.state || "unknown",
         alertType: event.alertType || "unknown",
         instructions: event.instructions || null,
+        zone: zoneName,
         cities: [],
         coordinates: [],
       });
     }
 
     const group = grouped.get(key);
+
+    // Keep the latest timestamp for the card header
+    if (timestamp && (!group.timestamp || timestamp > group.timestamp)) {
+      group.timestamp = timestamp;
+    }
+
     const cityName = event.name || "";
     if (cityName && !group.cities.includes(cityName)) {
       group.cities.push(cityName);
@@ -860,7 +872,7 @@ function renderAlertsList(historyEvents) {
     const top = document.createElement("div");
     top.className = "alert-top";
     const title = document.createElement("strong");
-    title.textContent = `${group.cities.length} יישובים`;
+    title.textContent = group.zone || `${group.cities.length} יישובים`;
     const stateBadge = document.createElement("span");
     stateBadge.textContent = getStateLabel(group.state);
     top.appendChild(title);
