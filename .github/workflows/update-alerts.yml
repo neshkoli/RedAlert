@@ -1,0 +1,62 @@
+name: Update Alert Data
+
+on:
+  schedule:
+    - cron: "* * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-alerts
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (for build script + node_modules)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: main
+
+      - name: Fetch live alerts
+        run: node -e "
+          const pikudHaoref = require('pikud-haoref-api');
+          pikudHaoref.getActiveAlerts((err, alerts) => {
+            const fs = require('fs');
+            const payload = {
+              generatedAt: new Date().toISOString(),
+              api: { source: 'pikud-haoref-api', error: err ? err.message : null },
+              alerts: err ? [] : (Array.isArray(alerts) ? alerts : []),
+            };
+            fs.writeFileSync('../data/raw-alerts.json', JSON.stringify(payload, null, 2), 'utf8');
+            console.log('Wrote raw-alerts.json, alerts:', payload.alerts.length);
+          });
+        "
+        working-directory: main
+
+      - name: Commit and push to data branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add raw-alerts.json
+          git diff --cached --quiet || git commit -m "chore: update alert data [skip ci]" && git push
+        working-directory: data

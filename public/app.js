@@ -1,5 +1,6 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
-const ALERTS_PROXY_URL = "https://redalert-proxy.neshkoli.workers.dev";
+const ALERTS_PROXY_URL = "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
+const ALERTS_PROXY_FALLBACK = "https://redalert-proxy.neshkoli.workers.dev";
 const REFRESH_MS = 5000;
 const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
@@ -959,7 +960,8 @@ function filterExpiredEndedZones(zones) {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
+  const sep = url.includes("?") ? "&" : "?";
+  const response = await fetch(`${url}${sep}_=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} for ${url}`);
   }
@@ -1010,11 +1012,19 @@ function setupDebugUI() {
   }
 }
 
+async function fetchAlerts() {
+  try {
+    return await fetchJson(ALERTS_PROXY_URL);
+  } catch (_e) {
+    return await fetchJson(ALERTS_PROXY_FALLBACK);
+  }
+}
+
 async function refresh() {
   try {
     const [lookupPayload, rawPayload] = await Promise.all([
       fetchJson("./data/zones-lookup.json"),
-      fetchJson(ALERTS_PROXY_URL),
+      fetchAlerts(),
     ]);
     state.zonesLookup = Array.isArray(lookupPayload.cities) ? lookupPayload.cities : [];
 
