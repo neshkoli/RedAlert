@@ -1,19 +1,8 @@
 {
-  "generatedAt": "2026-03-09T16:43:01.011Z",
+  "generatedAt": "2026-03-09T16:44:00.965Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "אבן מנחם",
-        "זרעית",
-        "שומרה",
-        "שתולה"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
