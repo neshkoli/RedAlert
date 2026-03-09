@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T13:50:01.337Z",
+  "generatedAt": "2026-03-09T13:51:01.262Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "משגב עם"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134175377820000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
