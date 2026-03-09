@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-09T15:21:00.953Z",
+  "generatedAt": "2026-03-09T15:22:00.800Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "משגב עם",
+        "מטולה"
+      ],
+      "instructions": "ירי רקטות וטילים"
+    }
+  ]
 }
