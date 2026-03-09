@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T23:45:01.419Z",
+  "generatedAt": "2026-03-09T23:46:01.195Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -8,10 +8,11 @@
     {
       "type": "missiles",
       "cities": [
-        "אביבים"
+        "מנרה",
+        "מרגליות"
       ],
       "instructions": "ירי רקטות וטילים",
-      "id": "134175730260000000"
+      "id": "134175735210000000"
     }
   ]
 }
