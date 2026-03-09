@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-09T17:29:01.373Z",
+  "generatedAt": "2026-03-09T17:30:01.009Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "הילה",
-        "מעיליא"
-      ],
-      "instructions": "ירי רקטות וטילים"
-    }
-  ]
+  "alerts": []
 }
