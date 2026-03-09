@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T23:46:01.195Z",
+  "generatedAt": "2026-03-09T23:47:01.003Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -11,8 +11,7 @@
         "מנרה",
         "מרגליות"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134175735210000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
