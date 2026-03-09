@@ -3,7 +3,7 @@ name: Update Alert Data
 on:
   schedule:
     - cron: "* * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,19 +38,7 @@ jobs:
         working-directory: main
 
       - name: Fetch live alerts
-        run: node -e "
-          const pikudHaoref = require('pikud-haoref-api');
-          pikudHaoref.getActiveAlerts((err, alerts) => {
-            const fs = require('fs');
-            const payload = {
-              generatedAt: new Date().toISOString(),
-              api: { source: 'pikud-haoref-api', error: err ? err.message : null },
-              alerts: err ? [] : (Array.isArray(alerts) ? alerts : []),
-            };
-            fs.writeFileSync('../data/raw-alerts.json', JSON.stringify(payload, null, 2), 'utf8');
-            console.log('Wrote raw-alerts.json, alerts:', payload.alerts.length);
-          });
-        "
+        run: node scripts/fetch-alerts-ci.js
         working-directory: main
 
       - name: Commit and push to data branch
@@ -58,5 +46,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add raw-alerts.json
-          git diff --cached --quiet || git commit -m "chore: update alert data [skip ci]" && git push
+          git diff --cached --quiet || (git commit -m "chore: update alert data [skip ci]" && git push)
         working-directory: data
