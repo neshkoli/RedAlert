@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-09T16:33:01.482Z",
+  "generatedAt": "2026-03-09T16:34:01.626Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "hostileAircraftIntrusion",
-      "cities": [
-        "אבן מנחם"
-      ],
-      "instructions": "חדירת כלי טיס עוין",
-      "id": "134175475600000000"
-    }
-  ]
+  "alerts": []
 }
