@@ -1,8 +1,18 @@
 {
-  "generatedAt": "2026-03-09T10:17:01.445Z",
+  "generatedAt": "2026-03-09T10:18:01.421Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "קריית ביאליק",
+        "אפק"
+      ],
+      "instructions": "ירי רקטות וטילים",
+      "id": "134175250430000000"
+    }
+  ]
 }
