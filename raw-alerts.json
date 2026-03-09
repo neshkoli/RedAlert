@@ -1,8 +1,18 @@
 {
-  "generatedAt": "2026-03-09T17:38:01.199Z",
+  "generatedAt": "2026-03-09T17:39:01.393Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "הילה",
+        "מעיליא"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175515060000000"
+    }
+  ]
 }
