@@ -1,8 +1,18 @@
 {
-  "generatedAt": "2026-03-09T15:31:00.907Z",
+  "generatedAt": "2026-03-09T15:32:00.694Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "מטולה",
+        "משגב עם"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175438860000000"
+    }
+  ]
 }
