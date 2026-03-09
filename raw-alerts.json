@@ -1,20 +1,8 @@
 {
-  "generatedAt": "2026-03-09T10:20:01.910Z",
+  "generatedAt": "2026-03-09T10:21:01.167Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "אזור תעשייה שער נעמן",
-        "אזור תעשייה קריית ביאליק",
-        "כפר מסריק",
-        "עין המפרץ",
-        "עכו - אזור תעשייה"
-      ],
-      "instructions": "ירי רקטות וטילים"
-    }
-  ]
+  "alerts": []
 }
