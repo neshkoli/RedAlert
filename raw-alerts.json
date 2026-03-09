@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T13:05:01.304Z",
+  "generatedAt": "2026-03-09T13:06:01.488Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -13,8 +13,7 @@
         "קריית שמונה",
         "תל חי"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175350580000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
