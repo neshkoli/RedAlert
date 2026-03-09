@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:17:01.554Z",
+  "generatedAt": "2026-03-09T23:18:01.169Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": null
+    "error": "Failed to parse HFC JSON: SyntaxError: Expected property name or '}' in JSON at position 2 (line 2 column 1)"
   },
   "alerts": []
 }
