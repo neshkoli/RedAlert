@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-09T10:46:00.999Z",
+  "generatedAt": "2026-03-09T10:47:00.967Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "זרעית"
+      ],
+      "instructions": "ירי רקטות וטילים",
+      "id": "134175268050000000"
+    }
+  ]
 }
