@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-09T09:46:01.465Z",
+  "generatedAt": "2026-03-09T09:47:01.329Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "מרגליות",
-        "קריית שמונה"
-      ],
-      "instructions": "ירי רקטות וטילים"
-    }
-  ]
+  "alerts": []
 }
