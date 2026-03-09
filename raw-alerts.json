@@ -1,8 +1,23 @@
 {
-  "generatedAt": "2026-03-09T14:17:00.773Z",
+  "generatedAt": "2026-03-09T14:18:01.677Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "hostileAircraftIntrusion",
+      "cities": [
+        "גורן",
+        "ערב אל עראמשה",
+        "גורנות הגליל",
+        "שתולה",
+        "אבן מנחם",
+        "זרעית",
+        "שומרה"
+      ],
+      "instructions": "חדירת כלי טיס עוין",
+      "id": "134175394770000000"
+    }
+  ]
 }
