@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T22:47:01.325Z",
+  "generatedAt": "2026-03-09T22:48:00.970Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -31,8 +31,7 @@
         "ריחאנייה",
         "מנחת מחניים"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175699780000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
