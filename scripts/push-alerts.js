@@ -19,6 +19,9 @@ function log(msg) {
   console.log(`[${new Date().toISOString()}] ${msg}`);
 }
 
+// Allow self-signed/missing certs in cron environments
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 pikudHaoref.getActiveAlerts((err, alerts) => {
   const payload = {
     generatedAt: new Date().toISOString(),
