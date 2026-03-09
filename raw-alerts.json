@@ -1,16 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:00:01.367Z",
+  "generatedAt": "2026-03-09T23:00:32.371Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": null
+    "error": "Failed to retrieve alerts from HFC API: AxiosError: Request failed with status code 403"
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "מלכיה"
-      ],
-      "instructions": "ירי רקטות וטילים"
-    }
-  ]
+  "alerts": []
 }
