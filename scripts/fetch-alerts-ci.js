@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const pikudHaoref = require("pikud-haoref-api");
 
-const OUTPUT = path.join(__dirname, "..", "data", "raw-alerts.json");
+const OUTPUT = path.join(__dirname, "..", "..", "data", "raw-alerts.json");
 
 pikudHaoref.getActiveAlerts((err, alerts) => {
   const payload = {
