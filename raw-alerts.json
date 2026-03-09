@@ -1,8 +1,20 @@
 {
-  "generatedAt": "2026-03-09T13:04:01.169Z",
+  "generatedAt": "2026-03-09T13:05:01.304Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "אביבים",
+        "יראון",
+        "קריית שמונה",
+        "תל חי"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175350580000000"
+    }
+  ]
 }
