@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T17:39:01.393Z",
+  "generatedAt": "2026-03-09T17:40:01.273Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -11,8 +11,7 @@
         "הילה",
         "מעיליא"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175515060000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
