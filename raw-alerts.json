@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T14:01:01.478Z",
+  "generatedAt": "2026-03-09T14:02:01.436Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "משגב עם"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175384110000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
