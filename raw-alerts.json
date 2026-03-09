@@ -1,8 +1,16 @@
 {
-  "generatedAt": "2026-03-09T22:58:01.634Z",
+  "generatedAt": "2026-03-09T22:59:01.513Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "מלכיה"
+      ],
+      "instructions": "ירי רקטות וטילים"
+    }
+  ]
 }
