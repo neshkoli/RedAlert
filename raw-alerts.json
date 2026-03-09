@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T09:32:01.891Z",
+  "generatedAt": "2026-03-09T09:33:00.838Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": "Failed to retrieve alerts from HFC API: Error: unable to get local issuer certificate"
