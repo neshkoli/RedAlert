@@ -1,17 +1,18 @@
 {
-  "generatedAt": "2026-03-09T10:47:00.967Z",
+  "generatedAt": "2026-03-09T10:48:00.779Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
   "alerts": [
     {
-      "type": "missiles",
+      "type": "hostileAircraftIntrusion",
       "cities": [
-        "זרעית"
+        "אבן מנחם",
+        "שומרה"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134175268050000000"
+      "instructions": "חדירת כלי טיס עוין",
+      "id": "134175268450000000"
     }
   ]
 }
