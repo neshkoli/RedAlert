@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-03-09T23:47:01.003Z",
+  "generatedAt": "2026-03-09T23:48:00.794Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
   "alerts": [
     {
-      "type": "missiles",
+      "type": "newsFlash",
       "cities": [
-        "מנרה",
-        "מרגליות"
+        "אביבים"
       ],
-      "instructions": "ירי רקטות וטילים"
+      "instructions": "האירוע הסתיים",
+      "id": "134175736450000000"
     }
   ]
 }
