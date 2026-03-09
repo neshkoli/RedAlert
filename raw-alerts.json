@@ -1,18 +1,8 @@
 {
-  "generatedAt": "2026-03-09T23:07:00.815Z",
+  "generatedAt": "2026-03-09T23:08:00.799Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "hostileAircraftIntrusion",
-      "cities": [
-        "כפר ורדים",
-        "ינוח ג'ת"
-      ],
-      "instructions": "חדירת כלי טיס עוין",
-      "id": "134175712110000000"
-    }
-  ]
+  "alerts": []
 }
