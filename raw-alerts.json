@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-09T20:02:08.724Z",
+  "generatedAt": "2026-03-09T20:03:00.854Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": "Failed to retrieve alerts from HFC API: AxiosError: Request failed with status code 403"
+    "error": null
   },
   "alerts": []
 }
