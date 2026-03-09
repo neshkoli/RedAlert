@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-09T23:37:00.738Z",
+  "generatedAt": "2026-03-09T23:38:01.379Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "אביבים"
+      ],
+      "instructions": "ירי רקטות וטילים",
+      "id": "134175730260000000"
+    }
+  ]
 }
