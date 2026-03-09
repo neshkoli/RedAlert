@@ -2,7 +2,12 @@ const fs = require("fs");
 const path = require("path");
 const pikudHaoref = require("pikud-haoref-api");
 
-const OUTPUT = path.join(__dirname, "..", "..", "data", "raw-alerts.json");
+// In CI: checked out as main/ with sibling data/ directory
+// Locally: run from repo root, push to data branch via git
+const CI = !!process.env.CI;
+const OUTPUT = CI
+  ? path.join(__dirname, "..", "..", "data", "raw-alerts.json")
+  : path.join(__dirname, "..", "public", "data", "raw-alerts.json");
 
 pikudHaoref.getActiveAlerts((err, alerts) => {
   const payload = {
@@ -14,6 +19,7 @@ pikudHaoref.getActiveAlerts((err, alerts) => {
     alerts: err ? [] : (Array.isArray(alerts) ? alerts : []),
   };
 
+  fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
   fs.writeFileSync(OUTPUT, JSON.stringify(payload, null, 2), "utf8");
-  console.log(`Wrote raw-alerts.json | alerts: ${payload.alerts.length} | error: ${payload.api.error || "none"}`);
+  console.log(`Wrote ${OUTPUT} | alerts: ${payload.alerts.length} | error: ${payload.api.error || "none"}`);
 }, { timeout: 10000 });
