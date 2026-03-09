@@ -1,18 +1,8 @@
 {
-  "generatedAt": "2026-03-09T21:41:00.978Z",
+  "generatedAt": "2026-03-09T21:42:00.763Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "מנרה",
-        "מרגליות",
-        "משגב עם"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
