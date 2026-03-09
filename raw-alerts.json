@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-09T16:42:00.964Z",
+  "generatedAt": "2026-03-09T16:43:01.011Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -13,8 +13,7 @@
         "שומרה",
         "שתולה"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175481060000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
