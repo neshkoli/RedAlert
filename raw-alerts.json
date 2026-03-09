@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-09T09:57:00.999Z",
+  "generatedAt": "2026-03-09T09:58:01.249Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "מרגליות",
-        "קריית שמונה"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
