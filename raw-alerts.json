@@ -1,20 +1,8 @@
 {
-  "generatedAt": "2026-03-10T00:44:01.523Z",
+  "generatedAt": "2026-03-10T00:45:01.141Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "בית הלל",
-        "הגושרים",
-        "מעיין ברוך",
-        "תל חי",
-        "קריית שמונה"
-      ],
-      "instructions": "ירי רקטות וטילים"
-    }
-  ]
+  "alerts": []
 }
