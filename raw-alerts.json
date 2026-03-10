@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T11:47:01.063Z",
+  "generatedAt": "2026-03-10T11:48:00.913Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -639,8 +639,7 @@
         "עין החורש",
         "תנובות"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176168140000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
