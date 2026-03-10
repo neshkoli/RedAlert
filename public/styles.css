@@ -227,6 +227,29 @@ h2 {
   border-left: 4px solid #30d158;
 }
 
+.alert-item--previewing {
+  outline: 2px solid #1b7fff;
+  background: #0d2040;
+  box-shadow: 0 0 0 3px rgba(27, 127, 255, 0.35);
+}
+
+.history-preview-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6000;
+  background: rgba(27, 127, 255, 0.92);
+  color: #fff;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
 .alert-top {
   display: flex;
   justify-content: space-between;

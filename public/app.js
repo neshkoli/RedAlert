@@ -42,6 +42,9 @@ const state = {
   zonesLookup: [],
   alertsPayload: null,
   markerLayer: null,
+  historyPreviewLayer: null,
+  historyPreviewActive: false,
+  historyPreviewTimer: null,
   apiConsoleVisible: false,
   testMode: false,
   testPayload: null,
@@ -65,6 +68,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 state.markerLayer = L.layerGroup().addTo(map);
+state.historyPreviewLayer = L.layerGroup().addTo(map);
 window._leafletMap = map;
 
 function normalizeName(value) {
@@ -578,6 +582,7 @@ function buildHistoryGroups(historyEvents) {
         zone: zoneName,
         cities: [],
         coordinates: [],
+        _rawEvents: [],
       });
     }
 
@@ -597,6 +602,9 @@ function buildHistoryGroups(historyEvents) {
     if (cityName && !group.cities.includes(cityName)) {
       group.cities.push(cityName);
     }
+
+    // Keep raw events so the preview can look up individual city coordinates.
+    group._rawEvents.push(event);
 
     if (event.lat != null && event.lng != null) {
       group.coordinates.push([event.lat, event.lng]);
@@ -864,7 +872,75 @@ function renderMarkers(zones) {
   }
 }
 
-function renderAlertsList(historyEvents) {
+// ---------------------------------------------------------------------------
+// History-preview: hold a card to isolate that group on the map
+// ---------------------------------------------------------------------------
+
+function showHistoryPreview(group) {
+  state.historyPreviewLayer.clearLayers();
+  state.markerLayer.eachLayer((l) => l.setStyle && l.setStyle({ opacity: 0.08, fillOpacity: 0.05 }));
+
+  const color = group.state === "ended" ? "#23a55a" : group.state === "active" ? "#ff3b30" : "#ff9800";
+
+  const zonesWithCoords = [];
+  for (const entry of group._rawEvents || []) {
+    if (entry.lat != null && entry.lng != null) {
+      zonesWithCoords.push(entry);
+    }
+  }
+
+  if (zonesWithCoords.length === 0 && group.coordinates && group.coordinates.length > 0) {
+    for (const [lat, lng] of group.coordinates) {
+      const circle = L.circle([lat, lng], {
+        radius: CIRCLE_RADIUS_METERS,
+        color,
+        fillColor: color,
+        fillOpacity: 0.45,
+        weight: 2.5,
+      });
+      circle.addTo(state.historyPreviewLayer);
+    }
+  } else {
+    for (const entry of zonesWithCoords) {
+      const cityName = entry.name || "";
+      const circle = L.circle([entry.lat, entry.lng], {
+        radius: CIRCLE_RADIUS_METERS,
+        color,
+        fillColor: color,
+        fillOpacity: 0.45,
+        weight: 2.5,
+      });
+      circle.bindTooltip(cityName, { permanent: false, direction: "top" });
+      circle.addTo(state.historyPreviewLayer);
+    }
+  }
+
+  const allCoords = zonesWithCoords.length > 0
+    ? zonesWithCoords.map((e) => [e.lat, e.lng])
+    : group.coordinates || [];
+
+  if (allCoords.length === 1) {
+    map.flyTo(allCoords[0], 10, { duration: 0.4, animate: true });
+  } else if (allCoords.length > 1) {
+    map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40], maxZoom: 11, animate: true });
+  }
+
+  const hint = document.getElementById("historyPreviewHint");
+  if (hint) hint.classList.remove("hidden");
+
+  state.historyPreviewActive = true;
+}
+
+function clearHistoryPreview() {
+  if (!state.historyPreviewActive) return;
+  state.historyPreviewLayer.clearLayers();
+  state.markerLayer.eachLayer((l) => {
+    if (l.setStyle) l.setStyle({ opacity: 1, fillOpacity: 0.35 });
+  });
+  const hint = document.getElementById("historyPreviewHint");
+  if (hint) hint.classList.add("hidden");
+  state.historyPreviewActive = false;
+}
   const container = document.getElementById("alertsList");
   container.innerHTML = "";
 
@@ -944,6 +1020,7 @@ function renderAlertsList(historyEvents) {
     }
 
     item.addEventListener("click", () => {
+      if (state.historyPreviewActive) return;
       if (!group.coordinates || group.coordinates.length === 0) return;
       if (group.coordinates.length === 1) {
         map.flyTo(group.coordinates[0], 10, { duration: 0.5 });
@@ -952,6 +1029,38 @@ function renderAlertsList(historyEvents) {
       const bounds = L.latLngBounds(group.coordinates);
       map.fitBounds(bounds, { padding: [25, 25], maxZoom: 10 });
     });
+
+    // Hold-to-preview: press and hold the card to isolate its circles on the map.
+    const HOLD_MS = 400;
+    let holdTimer = null;
+
+    function startHold(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      holdTimer = setTimeout(() => {
+        holdTimer = null;
+        item.classList.add("alert-item--previewing");
+        showHistoryPreview(group);
+      }, HOLD_MS);
+    }
+
+    function cancelHold() {
+      if (holdTimer !== null) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+      item.classList.remove("alert-item--previewing");
+      clearHistoryPreview();
+    }
+
+    item.addEventListener("pointerdown", startHold);
+    item.addEventListener("pointerup", cancelHold);
+    item.addEventListener("pointercancel", cancelHold);
+    item.addEventListener("pointerleave", cancelHold);
+    item.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      cancelHold();
+    });
+
     container.appendChild(item);
   }
 }
