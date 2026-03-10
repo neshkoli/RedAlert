@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T13:46:00.636Z",
+  "generatedAt": "2026-03-10T13:47:00.797Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "מטולה"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176239220000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
