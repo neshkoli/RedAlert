@@ -1,16 +1,8 @@
 {
-  "generatedAt": "2026-03-10T13:22:01.728Z",
+  "generatedAt": "2026-03-10T13:23:01.556Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "משגב עם"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
