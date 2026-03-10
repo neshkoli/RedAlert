@@ -1,0 +1,56 @@
+name: Deploy Backend to OCI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/server.py"
+      - "backend/pikud_haoref.py"
+      - "backend/requirements.txt"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.OCI_SSH_KEY }}" > ~/.ssh/deploy.key
+          chmod 600 ~/.ssh/deploy.key
+          ssh-keyscan -H ${{ secrets.OCI_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy backend files
+        run: |
+          scp -i ~/.ssh/deploy.key \
+            backend/server.py \
+            backend/pikud_haoref.py \
+            opc@${{ secrets.OCI_HOST }}:/home/opc/pikud-backend/
+
+      - name: Install/upgrade Python deps if requirements changed
+        if: contains(github.event.commits[0].modified, 'backend/requirements.txt') || github.event_name == 'workflow_dispatch'
+        run: |
+          ssh -i ~/.ssh/deploy.key opc@${{ secrets.OCI_HOST }} \
+            '/opt/pikud-venv/bin/pip install -r /home/opc/pikud-backend/requirements.txt --quiet'
+
+      - name: Copy requirements.txt
+        run: |
+          scp -i ~/.ssh/deploy.key \
+            backend/requirements.txt \
+            opc@${{ secrets.OCI_HOST }}:/home/opc/pikud-backend/
+
+      - name: Restart service
+        run: |
+          ssh -i ~/.ssh/deploy.key opc@${{ secrets.OCI_HOST }} \
+            'sudo systemctl restart pikud-backend'
+
+      - name: Health check
+        run: |
+          sleep 5
+          STATUS=$(curl -sf --max-time 10 http://${{ secrets.OCI_HOST }}:3000/health)
+          echo "Health response: $STATUS"
+          echo "$STATUS" | grep -q '"ok":true' || (echo "Health check FAILED" && exit 1)

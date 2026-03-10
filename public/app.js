@@ -1,7 +1,12 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
+// To use the self-hosted backend instead of the GitHub/Cloudflare proxy,
+// set BACKEND_API_URL to your Oracle instance public IP, e.g.:
+//   const BACKEND_API_URL = "http://<YOUR_IP>:3000/api/alerts";
+// When set to null the app falls back to the original proxy sources.
+const BACKEND_API_URL = "http://151.145.85.223:3000/api/alerts";
 const ALERTS_PROXY_URL = "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
 const ALERTS_PROXY_FALLBACK = "https://redalert-proxy.neshkoli.workers.dev";
-const REFRESH_MS = 5000;
+const REFRESH_MS = 3000;
 const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
 const MAX_HISTORY_ITEMS = 1000;
@@ -974,7 +979,8 @@ function updateStatus(payload, visibleZones) {
   const historyCount = Array.isArray(payload.history) ? payload.history.length : 0;
   const apiError = DEBUG_MODE && payload.api && payload.api.error ? ` | שגיאת API: ${payload.api.error}` : "";
   const testModeText = state.testMode ? " | מצב בדיקה פעיל" : "";
-  el.textContent = `עודכן: ${formatIso(payload.generatedAt)} | פעיל במפה: ${activeCount} | היסטוריה: ${historyCount}${apiError}${testModeText}`;
+  const pollText = payload.lastPollAt ? ` | סקר אחרון: ${formatIso(payload.lastPollAt)}` : "";
+  el.textContent = `עודכן: ${formatIso(payload.generatedAt)} | פעיל במפה: ${activeCount} | היסטוריה: ${historyCount}${pollText}${apiError}${testModeText}`;
 }
 
 function renderApiConsole(payload) {
@@ -1013,6 +1019,19 @@ function setupDebugUI() {
 }
 
 async function fetchAlerts() {
+  if (BACKEND_API_URL) {
+    // Self-hosted Oracle backend — response shape: { ok, live, history, generatedAt, error }
+    const data = await fetchJson(BACKEND_API_URL);
+    return {
+      generatedAt: data.generatedAt || new Date().toISOString(),
+      lastPollAt: data.lastPollAt || null,
+      api: { source: "backend", error: data.error || null },
+      alerts: Array.isArray(data.live) ? data.live : [],
+      // Pass raw backend history so the frontend can seed its local history
+      // on first load (avoids blank history on a fresh browser session).
+      backendHistory: Array.isArray(data.history) ? data.history : [],
+    };
+  }
   try {
     return await fetchJson(ALERTS_PROXY_URL);
   } catch (_e) {
@@ -1034,18 +1053,35 @@ async function refresh() {
       if (city && city.normalizedName) lookupByName[city.normalizedName] = city;
     }
 
-    // Merge raw API alerts with previous local state
+    // Merge raw API alerts with previous local state.
+    // On first load seed local history from the backend so the user sees
+    // recent events even in a fresh browser session.
     const previousState = loadAlertsState();
+    const seedHistory =
+      previousState.history && previousState.history.length > 0
+        ? previousState.history
+        : (rawPayload.backendHistory || []).map((rec) => ({
+            timestamp: rec.timestamp,
+            name: (rec.cities || [])[0] || "?",
+            normalizedName: normalizeName((rec.cities || [])[0] || ""),
+            alertType: rec.type || "unknown",
+            state: "expired",
+            instructions: rec.instructions || null,
+            zone: null,
+            lat: null,
+            lng: null,
+          }));
     const currentByName = pickCurrentZones(rawPayload.alerts || []);
     const mergedResult = mergeZoneStates(
       currentByName,
       previousState.zones || [],
-      previousState.history || [],
+      seedHistory,
       lookupByName
     );
 
     const alertsPayload = {
       generatedAt: rawPayload.generatedAt,
+      lastPollAt: rawPayload.lastPollAt || null,
       api: rawPayload.api,
       alerts: rawPayload.alerts,
       zones: mergedResult.zones,
