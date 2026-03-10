@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T18:08:00.651Z",
+  "generatedAt": "2026-03-10T18:09:01.736Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -8,10 +8,10 @@
     {
       "type": "missiles",
       "cities": [
+        "מרגליות",
         "קריית שמונה"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176396690000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
