@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T16:30:01.652Z",
+  "generatedAt": "2026-03-10T16:31:01.481Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "דוב''ב"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176337650000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
