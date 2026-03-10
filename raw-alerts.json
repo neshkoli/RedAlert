@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T13:36:01.665Z",
+  "generatedAt": "2026-03-10T13:37:01.535Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "מטולה"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176233190000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
