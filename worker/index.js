@@ -1,12 +1,16 @@
-// Cloudflare Worker — HTTPS gateway for pikud-haoref alerts.
+// Cloudflare Worker — HTTPS gateway to the OCI Flask backend via KV cache.
 //
-// Fetches from the GitHub data branch (updated every minute by GitHub Actions)
-// which uses GitHub's own IP range — always reachable, no CORS issues.
-// Reshapes the response to { ok, live, history, generatedAt, lastPollAt }
-// so the frontend works identically whether using this Worker or the OCI backend.
+// The OCI backend (Python/Flask, polling oref.org.il every 3s) pushes its
+// latest alert snapshot to Cloudflare Workers KV on every change.
+// This Worker reads from KV and serves it to the browser over HTTPS.
+//
+// Why KV instead of fetching the OCI backend directly:
+//   Cloudflare Workers cannot fetch bare IP addresses (returns 403).
+//   Workers also cannot fetch self-signed TLS certs without ACM (paid).
+//   KV is free, ~0ms latency, and decoupled from OCI uptime.
 
-const GITHUB_RAW =
-  "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
+const KV_KEY = "latest";
+const MAX_KV_AGE_MS = 30 * 1000; // treat data as stale after 30s
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -16,43 +20,70 @@ const CORS_HEADERS = {
 };
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
     const now = new Date().toISOString();
+
+    // POST /push  — called by the OCI backend to update the KV cache.
+    // Protected by a shared secret in the Authorization header.
+    const url = new URL(request.url);
+    if (url.pathname === "/push" && request.method === "POST") {
+      const auth = request.headers.get("Authorization") || "";
+      if (auth !== `Bearer ${env.PUSH_SECRET}`) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+      const body = await request.text();
+      await env.ALERTS_CACHE.put(KV_KEY, body, { expirationTtl: 120 });
+      return new Response("ok", { status: 200 });
+    }
+
+    // GET /  — serve cached alerts.
     try {
-      // Bust GitHub's CDN cache with a timestamp query param
-      const res = await fetch(`${GITHUB_RAW}?_=${Date.now()}`, {
-        headers: { "Cache-Control": "no-cache" },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error(`GitHub HTTP ${res.status}`);
+      const cached = await env.ALERTS_CACHE.get(KV_KEY);
+      if (!cached) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            generatedAt: now,
+            lastPollAt: null,
+            api: { source: "oci-backend", error: "no data in cache yet" },
+            live: [],
+            history: [],
+          }),
+          { status: 200, headers: CORS_HEADERS }
+        );
+      }
 
-      const data = await res.json();
+      const data = JSON.parse(cached);
 
-      // data shape from fetch-alerts-ci.js: { generatedAt, api: { source, error }, alerts: [...] }
-      // Reshape to backend shape: { ok, generatedAt, lastPollAt, api, live, history }
-      const body = JSON.stringify({
-        ok: true,
-        generatedAt: now,
-        lastPollAt: data.generatedAt || now,   // when GitHub Actions last polled
-        api: data.api || { source: "github-data-branch", error: null },
-        live: Array.isArray(data.alerts) ? data.alerts : [],
-        history: [],
+      // Annotate with a flag if the backend hasn't pushed for a while.
+      const pushedAt = data.generatedAt || data.lastPollAt || null;
+      const ageMs = pushedAt ? Date.now() - new Date(pushedAt).getTime() : Infinity;
+      if (ageMs > MAX_KV_AGE_MS) {
+        data.api = data.api || {};
+        data.api.stale = true;
+        data.api.ageMs = ageMs;
+      }
+
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: CORS_HEADERS,
       });
-      return new Response(body, { status: 200, headers: CORS_HEADERS });
     } catch (err) {
-      const body = JSON.stringify({
-        ok: false,
-        generatedAt: now,
-        lastPollAt: null,
-        api: { source: "github-data-branch", error: err.message },
-        live: [],
-        history: [],
-      });
-      return new Response(body, { status: 200, headers: CORS_HEADERS });
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          generatedAt: now,
+          lastPollAt: null,
+          api: { source: "oci-backend", error: err.message },
+          live: [],
+          history: [],
+        }),
+        { status: 200, headers: CORS_HEADERS }
+      );
     }
   },
 };
