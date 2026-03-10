@@ -1091,7 +1091,8 @@ async function refresh() {
 
     const payloadToRender = state.testMode && state.testPayload ? state.testPayload : alertsPayload;
     const zones = filterExpiredEndedZones(Array.isArray(payloadToRender.zones) ? payloadToRender.zones : []);
-    const historyEvents = Array.isArray(payloadToRender.history) ? payloadToRender.history : [];
+    const historyEvents = (Array.isArray(payloadToRender.history) ? payloadToRender.history : [])
+      .filter((e) => e && e.state !== "expired");
     renderCityOptions();
     renderMarkers(zones);
     renderAlertsList(historyEvents);
