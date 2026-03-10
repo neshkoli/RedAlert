@@ -132,6 +132,7 @@ def _poll_loop() -> None:
 # Flask app
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
+app.json.ensure_ascii = False
 CORS(app)
 
 
