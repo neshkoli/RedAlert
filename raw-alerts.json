@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-10T06:30:01.975Z",
+  "generatedAt": "2026-03-10T06:31:00.772Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "שלומי"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175978430000000"
+    }
+  ]
 }
