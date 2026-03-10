@@ -1,8 +1,18 @@
 {
-  "generatedAt": "2026-03-10T11:50:00.846Z",
+  "generatedAt": "2026-03-10T11:51:00.902Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "בית ינאי",
+        "מכמורת"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134176170140000000"
+    }
+  ]
 }
