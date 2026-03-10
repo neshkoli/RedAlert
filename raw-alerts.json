@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-10T16:40:00.975Z",
+  "generatedAt": "2026-03-10T16:41:00.736Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "דוב''ב"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134176344130000000"
+    }
+  ]
 }
