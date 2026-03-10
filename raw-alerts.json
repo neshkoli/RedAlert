@@ -1,16 +1,8 @@
 {
-  "generatedAt": "2026-03-10T23:20:00.838Z",
+  "generatedAt": "2026-03-10T23:21:00.717Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "מלכיה"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
