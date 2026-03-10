@@ -1,8 +1,18 @@
 {
-  "generatedAt": "2026-03-10T11:40:01.625Z",
+  "generatedAt": "2026-03-10T11:41:01.330Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "בית ינאי",
+        "מכמורת"
+      ],
+      "instructions": "ירי רקטות וטילים",
+      "id": "134176164170000000"
+    }
+  ]
 }
