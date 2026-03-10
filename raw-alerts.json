@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T17:42:01.138Z",
+  "generatedAt": "2026-03-10T17:43:01.885Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -27,8 +27,7 @@
         "שדה נחמיה",
         "שמיר"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176381120000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
