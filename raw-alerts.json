@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T19:21:01.287Z",
+  "generatedAt": "2026-03-10T19:22:01.430Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -23,8 +23,7 @@
         "קיבוץ דן",
         "שאר ישוב"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176440090000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
