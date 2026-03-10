@@ -1,8 +1,19 @@
 {
-  "generatedAt": "2026-03-10T00:04:00.993Z",
+  "generatedAt": "2026-03-10T00:05:01.605Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "משגב עם",
+        "קריית שמונה",
+        "תל חי"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175746540000000"
+    }
+  ]
 }
