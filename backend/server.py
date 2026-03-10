@@ -149,6 +149,36 @@ def api_alerts():
     return jsonify(snap)
 
 
+@app.get("/api/about")
+def api_about():
+    import platform, sys
+    with _lock:
+        history_count = len(_state["history"])
+        last_poll = _state["last_poll_at"]
+        last_error = _state["last_error"]
+    return jsonify({
+        "name": "pikud-backend",
+        "description": "Pikud Ha'oref real-time alert backend — Python/Flask port of pikud-haoref-api",
+        "version": "1.0.0",
+        "source": "https://github.com/neshkoli/RedAlert",
+        "runtime": {
+            "python": sys.version,
+            "platform": platform.platform(),
+        },
+        "config": {
+            "pollIntervalSeconds": POLL_INTERVAL,
+            "maxHistory": MAX_HISTORY,
+            "port": PORT,
+        },
+        "status": {
+            "lastPollAt": last_poll,
+            "lastError": last_error,
+            "historyRecords": history_count,
+        },
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+    })
+
+
 @app.get("/health")
 def health():
     return jsonify({"ok": True})
