@@ -1,16 +1,8 @@
 {
-  "generatedAt": "2026-03-10T02:01:01.451Z",
+  "generatedAt": "2026-03-10T02:02:01.409Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "מטולה"
-      ],
-      "instructions": "האירוע הסתיים"
-    }
-  ]
+  "alerts": []
 }
