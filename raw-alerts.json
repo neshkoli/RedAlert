@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T08:12:00.782Z",
+  "generatedAt": "2026-03-10T08:13:01.224Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -685,8 +685,7 @@
         "אורה",
         "עמינדב"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176038810000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
