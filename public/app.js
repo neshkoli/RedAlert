@@ -4,7 +4,7 @@ const ISRAEL_CENTER = [31.765352, 34.988067];
 const BACKEND_API_URL = "https://redalert-proxy.neshkoli.workers.dev";
 const ALERTS_PROXY_URL = "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
 const ALERTS_PROXY_FALLBACK = "https://redalert-proxy.neshkoli.workers.dev";
-const REFRESH_MS = 3000;
+const REFRESH_MS = 5000;
 const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
 const MAX_HISTORY_ITEMS = 1000;
@@ -558,14 +558,12 @@ function buildHistoryGroups(historyEvents) {
 
   for (const event of historyEvents || []) {
     const timestamp = event.timestamp || event.startedAt || null;
-    // Group by alert identity (type + instructions + state + reason + zone),
-    // so all cities in the same zone/alert collapse into one card.
     const zoneName = event.zone || null;
+    // Group key intentionally excludes `state` so that an "active" and its
+    // subsequent "ended" event collapse into a single card.
     const keyParts = [
-      event.state || "unknown",
       event.alertType || "unknown",
       normalizeName(event.instructions || ""),
-      event.reason || "",
       zoneName || "",
     ];
     const key = keyParts.join("|");
@@ -585,7 +583,12 @@ function buildHistoryGroups(historyEvents) {
 
     const group = grouped.get(key);
 
-    // Keep the latest timestamp for the card header
+    // "ended" wins over "active" for the same logical event.
+    if (event.state === "ended" && group.state !== "ended") {
+      group.state = "ended";
+    }
+
+    // Keep the latest timestamp for the card header.
     if (timestamp && (!group.timestamp || timestamp > group.timestamp)) {
       group.timestamp = timestamp;
     }
