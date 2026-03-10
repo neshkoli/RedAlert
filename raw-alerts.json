@@ -1,31 +1,8 @@
 {
-  "generatedAt": "2026-03-10T07:58:01.396Z",
+  "generatedAt": "2026-03-10T07:58:47.857Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": null
+    "error": "Failed to retrieve alerts from HFC API: AxiosError: Request failed with status code 403"
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "ירושלים - אזור תעשייה עטרות",
-        "ירושלים - דרום",
-        "ירושלים - כפר עקב",
-        "ירושלים - מזרח",
-        "ירושלים - מערב",
-        "ירושלים - מרכז",
-        "ירושלים - צפון",
-        "בית זית",
-        "מבשרת ציון",
-        "מוצא עילית",
-        "פנימיית עין כרם",
-        "אבן ספיר",
-        "אורה",
-        "עמינדב",
-        "גבעון החדשה",
-        "גבעת זאב"
-      ],
-      "instructions": "בדקות הקרובות צפויות להתקבל התרעות באזורך"
-    }
-  ]
+  "alerts": []
 }
