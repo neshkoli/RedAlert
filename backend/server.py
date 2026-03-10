@@ -1,5 +1,5 @@
 """
-Pikud Ha'oref alert backend — Python/Flask + gunicorn.
+Pikud Ha'oref alert backend — Python/Flask.
 Polls the HFC API every 3 seconds, stores up to 1000 deduplicated records,
 and exposes GET /api/alerts + GET /health.
 
@@ -9,6 +9,7 @@ On every alert change, pushes a snapshot to the Cloudflare Worker's KV cache
 Memory target: ~30-50 MB RSS (vs ~150 MB for Node).
 """
 
+import gc
 import json
 import logging
 import os
@@ -77,7 +78,8 @@ def _load_history() -> list:
 
 def _save_history(history: list) -> None:
     try:
-        HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2))
+        # Write without indent to save disk space and reduce serialization cost.
+        HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False))
     except Exception as exc:
         log.error("Could not save history: %s", exc)
 
@@ -105,6 +107,7 @@ def _fingerprint(alerts: list) -> str:
 # Polling loop (runs in a daemon thread, started once per process)
 # ---------------------------------------------------------------------------
 def _poll_loop() -> None:
+    gc_counter = 0
     while True:
         should_push = False
         snapshot = None
@@ -129,7 +132,8 @@ def _poll_loop() -> None:
                             "cities": a.get("cities", []),
                         })
                     if len(_state["history"]) > MAX_HISTORY:
-                        _state["history"] = _state["history"][:MAX_HISTORY]
+                        # Trim to 90 % of max to avoid re-trimming on every insert.
+                        _state["history"] = _state["history"][:int(MAX_HISTORY * 0.9)]
                     _save_history(_state["history"])
                     log.info("New alert batch: %d alert(s)", len(alerts))
 
@@ -156,6 +160,11 @@ def _poll_loop() -> None:
 
         if should_push and snapshot:
             threading.Thread(target=_push_to_kv, args=(snapshot,), daemon=True).start()
+
+        # Run the GC every ~5 minutes to reclaim memory from push thread cycles.
+        gc_counter += 1
+        if gc_counter % 100 == 0:
+            gc.collect()
 
         time.sleep(POLL_INTERVAL)
 
