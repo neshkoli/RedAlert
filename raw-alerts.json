@@ -1,8 +1,16 @@
 {
-  "generatedAt": "2026-03-10T01:55:00.865Z",
+  "generatedAt": "2026-03-10T01:56:01.583Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "missiles",
+      "cities": [
+        "יפתח"
+      ],
+      "instructions": "ירי רקטות וטילים"
+    }
+  ]
 }
