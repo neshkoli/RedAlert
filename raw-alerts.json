@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T16:41:00.736Z",
+  "generatedAt": "2026-03-10T16:42:01.514Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "דוב''ב"
       ],
-      "instructions": "האירוע הסתיים",
-      "id": "134176344130000000"
+      "instructions": "האירוע הסתיים"
     }
   ]
 }
