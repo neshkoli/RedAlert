@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-10T18:47:01.161Z",
+  "generatedAt": "2026-03-10T18:48:16.452Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": null
+    "error": "Failed to retrieve alerts from HFC API: AxiosError: timeout of 10000ms exceeded"
   },
   "alerts": []
 }
