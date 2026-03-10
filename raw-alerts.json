@@ -1,18 +1,8 @@
 {
-  "generatedAt": "2026-03-10T00:01:00.857Z",
+  "generatedAt": "2026-03-10T00:02:01.573Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "newsFlash",
-      "cities": [
-        "מנרה",
-        "מרגליות"
-      ],
-      "instructions": "האירוע הסתיים",
-      "id": "134175743900000000"
-    }
-  ]
+  "alerts": []
 }
