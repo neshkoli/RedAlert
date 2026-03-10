@@ -1,9 +1,7 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
-// To use the self-hosted backend instead of the GitHub/Cloudflare proxy,
-// set BACKEND_API_URL to your Oracle instance public IP, e.g.:
-//   const BACKEND_API_URL = "http://<YOUR_IP>:3000/api/alerts";
-// When set to null the app falls back to the original proxy sources.
-const BACKEND_API_URL = "http://151.145.85.223:3000/api/alerts";
+// Cloudflare Worker acts as the HTTPS gateway to the OCI Flask backend.
+// Direct HTTP to the OCI IP is blocked by browsers (mixed content).
+const BACKEND_API_URL = "https://redalert-proxy.neshkoli.workers.dev";
 const ALERTS_PROXY_URL = "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
 const ALERTS_PROXY_FALLBACK = "https://redalert-proxy.neshkoli.workers.dev";
 const REFRESH_MS = 3000;
