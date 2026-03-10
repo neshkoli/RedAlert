@@ -1,8 +1,17 @@
 {
-  "generatedAt": "2026-03-10T13:18:01.533Z",
+  "generatedAt": "2026-03-10T13:19:01.848Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "שתולה"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134176222990000000"
+    }
+  ]
 }
