@@ -8,22 +8,20 @@ Live site: **https://neshkoli.github.io/RedAlert/**
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Data Sources                                  │
-│                                                                     │
-│   oref.org.il  ──►  OCI Backend (Python/Flask)  ──►  history.json  │
-│   oref.org.il  ──►  GitHub Actions (every 1 min) ──► data branch   │
-└─────────────────────────────────────────────────────────────────────┘
-                              │                           │
-                              │                           ▼
-                              │              Cloudflare Worker
-                              │              (HTTPS proxy / reshaper)
-                              │                           │
-                              └───────────────────────────┘
-                                                          │
-                                                          ▼
-                                           GitHub Pages (frontend)
-                                           https://neshkoli.github.io/RedAlert/
+oref.org.il
+    │
+    ▼  (every 3 seconds)
+OCI Backend — Python/Flask (Jerusalem region)
+    │  poll → deduplicate → history.json
+    │
+    │  on change + every ~30s heartbeat
+    ▼
+Cloudflare Workers KV  ←─── POST /push (PUSH_SECRET auth)
+    │
+    │  on every browser request (~0ms read)
+    ▼
+Cloudflare Worker  ──►  browser (GitHub Pages)
+                        https://neshkoli.github.io/RedAlert/
 ```
 
 ### Components
@@ -31,9 +29,9 @@ Live site: **https://neshkoli.github.io/RedAlert/**
 | Layer | Technology | Location | Purpose |
 |---|---|---|---|
 | **Frontend** | Vanilla JS + Leaflet | `public/` → GitHub Pages | Map + alerts panel UI |
-| **Backend** | Python 3 / Flask | `backend/` → OCI instance | Poll HFC API every 3 s, keep history |
-| **HTTPS Proxy** | Cloudflare Worker | `worker/` → workers.dev | Serve data over HTTPS (mixed-content fix) |
-| **CI — data** | GitHub Actions | `.github/workflows/update-alerts.yml` | Fetch live alerts every minute → `data` branch |
+| **Backend** | Python 3 / Flask | `backend/` → OCI instance | Poll HFC API every 3 s, push to KV |
+| **KV cache** | Cloudflare Workers KV | `ALERTS_CACHE` namespace | Decouple browser from OCI; ~0ms read |
+| **HTTPS gateway** | Cloudflare Worker | `worker/` → workers.dev | Serve KV data over HTTPS to browser |
 | **CI — frontend** | GitHub Actions | `.github/workflows/deploy-pages.yml` | Build + deploy `public/` to GitHub Pages on push |
 | **CI — backend** | GitHub Actions | `.github/workflows/deploy-oci.yml` | Deploy `backend/` to OCI on push |
 
@@ -42,22 +40,25 @@ Live site: **https://neshkoli.github.io/RedAlert/**
 ## Data Flow
 
 ```
-Every 3 seconds:
-  OCI Flask server
-    └─ pikud_haoref.py  ──►  GET oref.org.il  ──►  deduplicate  ──►  history.json (≤1000 records)
-
-Every 1 minute (GitHub Actions):
-  scripts/fetch-alerts-ci.js  ──►  GET oref.org.il  ──►  raw-alerts.json  ──►  push to `data` branch
+Every 3 seconds (OCI backend):
+  pikud_haoref.py ──► GET oref.org.il ──► deduplicate
+      │
+      ├─ store in memory + history.json (≤ 1000 records)
+      │
+      └─ if changed (or every ~30s heartbeat):
+             POST https://redalert-proxy.neshkoli.workers.dev/push
+                  Authorization: Bearer <PUSH_SECRET>
+                  body: { ok, generatedAt, lastPollAt, live, history }
+                       ──► Cloudflare Worker writes to KV key "latest" (TTL 120s)
 
 Every 5 seconds (browser):
-  app.js  ──►  GET https://redalert-proxy.neshkoli.workers.dev
-                   │
-                   └─ Cloudflare Worker  ──►  GET raw.githubusercontent.com/…/data/raw-alerts.json
-                                              (reshapes to { ok, live, history, generatedAt, lastPollAt })
+  app.js ──► GET https://redalert-proxy.neshkoli.workers.dev
+                  Cloudflare Worker reads KV "latest" ──► response to browser
 ```
 
-The Cloudflare Worker is the single HTTPS endpoint the browser talks to.  
-It reads from the GitHub `data` branch (updated by CI), which avoids mixed-content browser errors and Cloudflare's restriction on outbound HTTP to arbitrary IPs.
+**Why Workers KV instead of direct access to the OCI backend:**
+
+Cloudflare Workers cannot `fetch()` bare IP addresses (returns 403), and accepting self-signed TLS certificates requires a paid Advanced Certificate Manager plan. The push model via KV is free, gives ~0 ms read latency, and decouples the browser entirely from OCI availability.
 
 ---
 
@@ -98,7 +99,7 @@ Chosen over Node.js because it runs at ~30–50 MB RSS vs ~150 MB for Node.
 
 | File | Role |
 |---|---|
-| `server.py` | Flask app — poller thread + REST endpoints |
+| `server.py` | Flask app — poller thread + KV push + REST endpoints |
 | `pikud_haoref.py` | Python port of `pikud-haoref-api` (fetches & parses HFC alert feed) |
 | `requirements.txt` | `flask`, `flask-cors`, `requests`, `gunicorn` |
 | `history.json` | Persistent alert history (survives restarts) |
@@ -111,9 +112,13 @@ Chosen over Node.js because it runs at ~30–50 MB RSS vs ~150 MB for Node.
 | `GET` | `/api/about` | Runtime info, config, current status |
 | `GET` | `/health` | `{ ok: true }` — used by CI health check |
 
+### KV push logic
+
+On each poll cycle the backend checks whether the alert fingerprint changed. If it changed (or every ~30 s as a keepalive), it fires a background thread that `POST`s the full snapshot to the Worker's `/push` endpoint with a `Bearer <PUSH_SECRET>` header. The Worker writes it to KV with a 120-second TTL so stale data auto-expires if the backend goes offline.
+
 ### OCI setup (systemd)
 
-The backend runs as a systemd service `pikud-backend` managed by `opc` user with a Python virtual env at `/opt/pikud-venv`.
+The backend runs as a `systemd` service `pikud-backend` under the `opc` user, with a Python virtual env at `/opt/pikud-venv`. A companion `cloudflared` service (Cloudflare Tunnel) is also running for optional direct access.
 
 ---
 
@@ -121,20 +126,27 @@ The backend runs as a systemd service `pikud-backend` managed by `opc` user with
 
 | File | Role |
 |---|---|
-| `index.js` | Worker fetch handler |
-| `wrangler.toml` | Wrangler deployment config |
+| `index.js` | Worker — serves KV data (`GET /`) and receives backend pushes (`POST /push`) |
+| `wrangler.toml` | Wrangler config — KV namespace binding (`ALERTS_CACHE`) |
 
-**Why a Worker?**  
-GitHub Pages is served over HTTPS. The OCI backend runs plain HTTP on port 3000. Browsers block mixed-content requests, and Cloudflare Workers cannot reach arbitrary non-standard HTTP ports either. The solution: a Worker that reads `raw-alerts.json` from the repository's `data` branch (always HTTPS, always reachable from Cloudflare) and reshapes it to the same JSON schema the frontend expects.
+### Worker endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | Read `latest` from KV, annotate with `stale` flag if age > 30 s |
+| `POST` | `/push` | Write snapshot to KV — requires `Authorization: Bearer <PUSH_SECRET>` |
+| `OPTIONS` | `*` | CORS preflight |
+
+### Bindings & secrets
+
+| Name | Type | Purpose |
+|---|---|---|
+| `ALERTS_CACHE` | KV Namespace | Stores the latest alert snapshot |
+| `PUSH_SECRET` | Secret | Shared token between OCI backend and Worker |
 
 ---
 
 ## CI / CD (`.github/workflows/`)
-
-### `update-alerts.yml` — runs every minute
-1. Checks out `main` (for the build script) and `data` branch side-by-side
-2. Runs `scripts/fetch-alerts-ci.js` → writes `raw-alerts.json`
-3. Commits and pushes to the `data` branch (`[skip ci]`)
 
 ### `deploy-pages.yml` — runs on push to `main`
 1. Installs Node dependencies
@@ -177,6 +189,13 @@ python server.py
 # → http://localhost:3000/api/alerts
 ```
 
+### Worker (local preview)
+
+```bash
+cd worker
+npx wrangler dev   # local Worker preview with real KV
+```
+
 ### CLI monitor (logs alerts to file)
 
 ```bash
@@ -188,7 +207,6 @@ npm start
 
 ## Notes
 
-- The HFC API (`oref.org.il`) is reachable only from Israeli IP addresses in most cases.  
-  GitHub Actions runners use global IPs — the `update-alerts.yml` workflow still works because GitHub's outbound IP range is whitelisted by the HFC CDN.
-- The OCI instance is in the **Israel Central (Jerusalem)** region, ensuring the backend always has a local Israeli IP.
+- The HFC API (`oref.org.il`) is reachable only from Israeli IP addresses. The OCI instance is in the **Israel Central (Jerusalem)** region, ensuring the backend always has a local Israeli IP.
 - City geolocation data comes from the `pikud-haoref-api` npm package's `cities.json` archive, matched at build time.
+- The `update-alerts.yml` GitHub Actions workflow (fetches alerts every minute to the `data` branch) is still present but is no longer the primary data source — the live OCI backend push is now used instead.
