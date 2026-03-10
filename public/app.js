@@ -941,6 +941,8 @@ function clearHistoryPreview() {
   if (hint) hint.classList.add("hidden");
   state.historyPreviewActive = false;
 }
+
+function renderAlertsList(historyEvents) {
   const container = document.getElementById("alertsList");
   container.innerHTML = "";
 
