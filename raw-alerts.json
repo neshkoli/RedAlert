@@ -1,20 +1,8 @@
 {
-  "generatedAt": "2026-03-10T21:40:01.309Z",
+  "generatedAt": "2026-03-10T21:41:01.131Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "missiles",
-      "cities": [
-        "איתמר",
-        "החווה של יאיא",
-        "חוות פריאל",
-        "חוות שדה"
-      ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176523950000000"
-    }
-  ]
+  "alerts": []
 }
