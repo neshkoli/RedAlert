@@ -1,8 +1,21 @@
 {
-  "generatedAt": "2026-03-10T05:22:01.154Z",
+  "generatedAt": "2026-03-10T05:23:00.922Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "בצת",
+        "יערה",
+        "מצובה",
+        "עבדון",
+        "שלומי"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134175937240000000"
+    }
+  ]
 }
