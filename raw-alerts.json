@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-10T15:44:01.261Z",
+  "generatedAt": "2026-03-10T15:45:01.321Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
@@ -10,8 +10,7 @@
       "cities": [
         "קריית שמונה"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176310010000000"
+      "instructions": "ירי רקטות וטילים"
     }
   ]
 }
