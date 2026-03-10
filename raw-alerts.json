@@ -1,18 +1,20 @@
 {
-  "generatedAt": "2026-03-10T17:30:00.783Z",
+  "generatedAt": "2026-03-10T17:31:01.510Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
   "alerts": [
     {
-      "type": "missiles",
+      "type": "hostileAircraftIntrusion",
       "cities": [
+        "משגב עם",
         "מנרה",
+        "קריית שמונה",
         "מרגליות"
       ],
-      "instructions": "ירי רקטות וטילים",
-      "id": "134176373940000000"
+      "instructions": "חדירת כלי טיס עוין",
+      "id": "134176374170000000"
     }
   ]
 }
