@@ -70,10 +70,9 @@ Every 5 seconds (browser):
 
 ---
 
-## Legacy backend (`backend/`)
+## OCI backend removal
 
-The previous OCI Python backend has been retired from production.
-`backend/` remains in the repository only as legacy/reference code and is not part of the active runtime path.
+The previous OCI Python backend has been fully removed from the repository and from the production runtime path.
 
 ---
 

@@ -7,7 +7,7 @@ yarn-error.log*
 logs/
 package-lock.json
 .data-worktree/
-backend/__pycache__/
+backend/
 public/data/active-alerts.json
 public/data/raw-alerts.json
 ssh-key-2026-03-09.key
