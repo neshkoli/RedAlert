@@ -1,8 +1,21 @@
 {
-  "generatedAt": "2026-03-11T02:19:01.057Z",
+  "generatedAt": "2026-03-11T02:20:00.801Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "hostileAircraftIntrusion",
+      "cities": [
+        "לב החולה",
+        "יפתח",
+        "מרכז אזורי מבואות חרמון",
+        "דישון",
+        "שדה אליעזר"
+      ],
+      "instructions": "חדירת כלי טיס עוין",
+      "id": "134176691750000000"
+    }
+  ]
 }
