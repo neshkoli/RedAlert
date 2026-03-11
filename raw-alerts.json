@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-03-11T02:59:01.144Z",
+  "generatedAt": "2026-03-11T03:00:00.887Z",
   "api": {
     "source": "pikud-haoref-api",
-    "error": null
+    "error": "Failed to parse HFC JSON: SyntaxError: Unterminated string in JSON at position 162526 (line 1 column 162527)"
   },
   "alerts": []
 }
