@@ -7,7 +7,6 @@
     "start": "node --no-deprecation pikud.js",
     "test:api": "node scripts/test-api.js",
     "build:data": "node scripts/build-static-data.js",
-    "push:alerts": "node scripts/push-alerts.js",
     "serve:static": "node scripts/serve-static.js",
     "web": "npm run serve:static"
   },

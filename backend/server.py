@@ -170,7 +170,7 @@ def _poll_loop() -> None:
 
 
 def _ensure_poller() -> None:
-    """Start the poller thread exactly once per process (safe for gunicorn --preload)."""
+    """Start the poller thread exactly once per process."""
     global _poller_started
     with _poller_lock:
         if _poller_started:
@@ -209,7 +209,7 @@ def _push_to_kv(snapshot: dict) -> None:
 # Flask app factory
 # ---------------------------------------------------------------------------
 def create_app() -> Flask:
-    """Gunicorn entry point: gunicorn 'server:create_app()'"""
+    """Create and configure the Flask application."""
     _ensure_poller()
     flask_app = Flask(__name__)
     flask_app.json.ensure_ascii = False
@@ -267,10 +267,9 @@ def _register_routes(flask_app: Flask) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Direct run (dev only — use systemd + python server.py in production)
+# Direct run (dev only)
 # ---------------------------------------------------------------------------
-app = create_app()
-
 if __name__ == "__main__":
-    log.info("Listening on port %d (plain HTTP)", PORT)
+    app = create_app()
+    log.info("Listening on port %d (Flask dev server)", PORT)
     app.run(host="0.0.0.0", port=PORT, threaded=True)

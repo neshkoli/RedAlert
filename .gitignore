@@ -6,3 +6,8 @@ yarn-error.log*
 .DS_Store
 logs/
 package-lock.json
+.data-worktree/
+backend/__pycache__/
+public/data/active-alerts.json
+public/data/raw-alerts.json
+ssh-key-2026-03-09.key

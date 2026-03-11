@@ -101,7 +101,7 @@ Chosen over Node.js because it runs at ~30–50 MB RSS vs ~150 MB for Node.
 |---|---|
 | `server.py` | Flask app — poller thread + KV push + REST endpoints |
 | `pikud_haoref.py` | Python port of `pikud-haoref-api` (fetches & parses HFC alert feed) |
-| `requirements.txt` | `flask`, `flask-cors`, `requests`, `gunicorn` |
+| `requirements.txt` | `flask`, `flask-cors`, `requests`, `waitress` |
 | `history.json` | Persistent alert history (survives restarts) |
 
 ### Endpoints
@@ -118,7 +118,7 @@ On each poll cycle the backend checks whether the alert fingerprint changed. If 
 
 ### OCI setup (systemd)
 
-The backend runs as a `systemd` service `pikud-backend` under the `opc` user, with a Python virtual env at `/opt/pikud-venv`. A companion `cloudflared` service (Cloudflare Tunnel) is also running for optional direct access.
+The backend runs as a `systemd` service `pikud-backend` under the `opc` user, with a Python virtual env at `/opt/pikud-venv`, served by Waitress WSGI (`python wsgi.py`).
 
 ---
 
@@ -209,4 +209,4 @@ npm start
 
 - The HFC API (`oref.org.il`) is reachable only from Israeli IP addresses. The OCI instance is in the **Israel Central (Jerusalem)** region, ensuring the backend always has a local Israeli IP.
 - City geolocation data comes from the `pikud-haoref-api` npm package's `cities.json` archive, matched at build time.
-- The `update-alerts.yml` GitHub Actions workflow (fetches alerts every minute to the `data` branch) is still present but is no longer the primary data source — the live OCI backend push is now used instead.
+- Legacy Node/data-branch polling code was removed; the single live source is OCI backend → Worker KV.
