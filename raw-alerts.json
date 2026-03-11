@@ -1,17 +1,8 @@
 {
-  "generatedAt": "2026-03-11T05:40:00.716Z",
+  "generatedAt": "2026-03-11T05:41:01.555Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": [
-    {
-      "type": "hostileAircraftIntrusion",
-      "cities": [
-        "אלוני הבשן"
-      ],
-      "instructions": "חדירת כלי טיס עוין",
-      "id": "134176811870000000"
-    }
-  ]
+  "alerts": []
 }
