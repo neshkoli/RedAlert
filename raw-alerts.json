@@ -1,8 +1,19 @@
 {
-  "generatedAt": "2026-03-11T03:22:00.967Z",
+  "generatedAt": "2026-03-11T03:23:00.781Z",
   "api": {
     "source": "pikud-haoref-api",
     "error": null
   },
-  "alerts": []
+  "alerts": [
+    {
+      "type": "newsFlash",
+      "cities": [
+        "יערה",
+        "ערב אל עראמשה",
+        "שתולה"
+      ],
+      "instructions": "האירוע הסתיים",
+      "id": "134176729450000000"
+    }
+  ]
 }
