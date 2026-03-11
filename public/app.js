@@ -1,9 +1,8 @@
 const ISRAEL_CENTER = [31.765352, 34.988067];
-// Cloudflare Worker acts as the HTTPS gateway to the OCI Flask backend.
-// Direct HTTP to the OCI IP is blocked by browsers (mixed content).
+// Cloudflare Worker is the single browser-facing backend endpoint.
 const BACKEND_API_URL = "https://redalert-proxy.neshkoli.workers.dev";
-const ALERTS_PROXY_URL = "https://raw.githubusercontent.com/neshkoli/RedAlert/data/raw-alerts.json";
-const ALERTS_PROXY_FALLBACK = "https://redalert-proxy.neshkoli.workers.dev";
+const TZEVAADOM_WS_URL = "wss://ws.tzevaadom.co.il/socket?platform=WEB";
+const USE_TZEVAADOM_WS = true;
 const REFRESH_MS = 5000;
 const ENDED_TTL_MS = 60 * 1000;
 const STALE_ALERT_MS = 15 * 60 * 1000;
@@ -55,6 +54,13 @@ const state = {
     soundEnabled: true,
     notificationsEnabled: true,
   },
+  ws: {
+    socket: null,
+    reconnectTimer: null,
+    reconnectDelayMs: 1000,
+    connected: false,
+    liveAlerts: new Map(),
+  },
 };
 
 const map = L.map("map", {
@@ -76,6 +82,185 @@ function normalizeName(value) {
     .replace(/\u200f|\u200e/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function mapThreatToAlertType(threat, isDrill) {
+  const typeMap = {
+    0: "missiles",
+    1: "hazardousMaterials",
+    2: "terroristInfiltration",
+    3: "earthQuake",
+    4: "tsunami",
+    5: "hostileAircraftIntrusion",
+    6: "radiologicalEvent",
+    7: "general",
+    8: "general",
+    9: "generalDrill",
+  };
+  const drillMap = {
+    missiles: "missilesDrill",
+    general: "generalDrill",
+    earthQuake: "earthQuakeDrill",
+    radiologicalEvent: "radiologicalEventDrill",
+    tsunami: "tsunamiDrill",
+    hostileAircraftIntrusion: "hostileAircraftIntrusionDrill",
+    hazardousMaterials: "hazardousMaterialsDrill",
+    terroristInfiltration: "terroristInfiltrationDrill",
+  };
+
+  const base = typeMap[Number(threat)] || "general";
+  if (isDrill && !base.endsWith("Drill")) {
+    return drillMap[base] || "generalDrill";
+  }
+  return base;
+}
+
+function mapThreatToInstructions(threat) {
+  const titleMap = {
+    0: "צבע אדום",
+    1: "אירוע חומרים מסוכנים",
+    2: "חשש לחדירת מחבלים",
+    3: "רעידת אדמה",
+    4: "חשש לצונאמי",
+    5: "חדירת כלי טיס עוין",
+    6: "חשש לאירוע רדיולוגי",
+    7: "ירי בלתי קונבנציונלי",
+    8: "התרעה",
+    9: "תרגיל פיקוד העורף",
+  };
+  return titleMap[Number(threat)] || "התרעה";
+}
+
+function normalizeWsAlert(raw) {
+  if (!raw || !Array.isArray(raw.cities) || raw.cities.length === 0) return null;
+  const threat = Number(raw.threat);
+  const isDrill = !!raw.isDrill;
+  const type = mapThreatToAlertType(threat, isDrill);
+  const instructions = mapThreatToInstructions(threat);
+  const cities = raw.cities.map((c) => normalizeName(c)).filter(Boolean);
+  if (cities.length === 0) return null;
+
+  return {
+    id: raw.notificationId || `ws-${Date.now()}-${type}`,
+    type,
+    instructions,
+    cities,
+    _receivedAt: Date.now(),
+  };
+}
+
+function pruneWsAlerts() {
+  const now = Date.now();
+  const WS_TTL_MS = 2 * 60 * 1000;
+  for (const [key, alert] of state.ws.liveAlerts.entries()) {
+    if (!alert || !alert._receivedAt || now - alert._receivedAt > WS_TTL_MS) {
+      state.ws.liveAlerts.delete(key);
+    }
+  }
+}
+
+function mergeWorkerAndWsAlerts(workerAlerts) {
+  pruneWsAlerts();
+  const merged = [];
+  const byFingerprint = new Set();
+
+  function addAlert(alert) {
+    const cities = Array.isArray(alert.cities) ? alert.cities.slice().sort() : [];
+    const fp = `${alert.type || "unknown"}|${normalizeName(alert.instructions || "")}|${cities.join(",")}`;
+    if (byFingerprint.has(fp)) return;
+    byFingerprint.add(fp);
+    merged.push(alert);
+  }
+
+  for (const alert of workerAlerts || []) addAlert(alert);
+  for (const alert of state.ws.liveAlerts.values()) addAlert(alert);
+  return merged;
+}
+
+function scheduleWsReconnect() {
+  if (!USE_TZEVAADOM_WS) return;
+  if (state.ws.reconnectTimer) return;
+  state.ws.reconnectTimer = setTimeout(() => {
+    state.ws.reconnectTimer = null;
+    initTzevaadomWs();
+  }, state.ws.reconnectDelayMs);
+  state.ws.reconnectDelayMs = Math.min(state.ws.reconnectDelayMs * 2, 30000);
+}
+
+function updateWsIndicator() {
+  const dot = document.getElementById("wsStatusDot");
+  const text = document.getElementById("wsStatusText");
+  const container = document.getElementById("wsStatusIndicator");
+  if (!dot || !text || !container) return;
+
+  if (!USE_TZEVAADOM_WS) {
+    dot.classList.remove("ws-online");
+    dot.classList.add("ws-offline");
+    text.textContent = "WS כבוי";
+    container.title = "חיבור WebSocket לא פעיל";
+    return;
+  }
+
+  if (state.ws.connected) {
+    dot.classList.remove("ws-offline");
+    dot.classList.add("ws-online");
+    text.textContent = "WS מחובר";
+    container.title = "חיבור WebSocket פעיל";
+  } else {
+    dot.classList.remove("ws-online");
+    dot.classList.add("ws-offline");
+    text.textContent = "WS מנותק";
+    container.title = "חיבור WebSocket מנותק (פולינג פעיל)";
+  }
+}
+
+function initTzevaadomWs() {
+  if (!USE_TZEVAADOM_WS) return;
+  if (state.ws.socket && (state.ws.socket.readyState === WebSocket.OPEN || state.ws.socket.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+
+  const ws = new WebSocket(TZEVAADOM_WS_URL);
+  state.ws.socket = ws;
+
+  ws.onopen = () => {
+    state.ws.connected = true;
+    state.ws.reconnectDelayMs = 1000;
+    updateWsIndicator();
+  };
+
+  ws.onmessage = (event) => {
+    if (typeof event.data !== "string") return;
+    try {
+      const message = JSON.parse(event.data);
+      if (!message || message.type !== "ALERT") return;
+      const payload = message.data;
+      const alerts = Array.isArray(payload) ? payload : [payload];
+      for (const raw of alerts) {
+        const normalized = normalizeWsAlert(raw);
+        if (!normalized) continue;
+        state.ws.liveAlerts.set(normalized.id, normalized);
+      }
+    } catch (_err) {
+      // Ignore malformed websocket payloads to keep polling path stable.
+    }
+  };
+
+  ws.onclose = () => {
+    state.ws.connected = false;
+    updateWsIndicator();
+    scheduleWsReconnect();
+  };
+
+  ws.onerror = () => {
+    state.ws.connected = false;
+    updateWsIndicator();
+    try {
+      ws.close();
+    } catch (_err) {
+      // ignore close failures
+    }
+  };
 }
 
 function isNewsFlash(type) {
@@ -1131,24 +1316,22 @@ function setupDebugUI() {
 }
 
 async function fetchAlerts() {
-  if (BACKEND_API_URL) {
-    // Self-hosted Oracle backend — response shape: { ok, live, history, generatedAt, error }
-    const data = await fetchJson(BACKEND_API_URL);
-    return {
-      generatedAt: data.generatedAt || new Date().toISOString(),
-      lastPollAt: data.lastPollAt || null,
-      api: { source: "backend", error: data.error || null },
-      alerts: Array.isArray(data.live) ? data.live : [],
-      // Pass raw backend history so the frontend can seed its local history
-      // on first load (avoids blank history on a fresh browser session).
-      backendHistory: Array.isArray(data.history) ? data.history : [],
-    };
-  }
-  try {
-    return await fetchJson(ALERTS_PROXY_URL);
-  } catch (_e) {
-    return await fetchJson(ALERTS_PROXY_FALLBACK);
-  }
+  // Response shape: { ok, live, history, generatedAt, lastPollAt, error, api }
+  const data = await fetchJson(BACKEND_API_URL);
+  const workerAlerts = Array.isArray(data.live) ? data.live : [];
+  const mergedAlerts = mergeWorkerAndWsAlerts(workerAlerts);
+  return {
+    generatedAt: data.generatedAt || new Date().toISOString(),
+    lastPollAt: data.lastPollAt || null,
+    api: {
+      ...(data.api || { source: "worker", error: data.error || null }),
+      wsConnected: state.ws.connected,
+      wsBufferedAlerts: state.ws.liveAlerts.size,
+    },
+    alerts: mergedAlerts,
+    // Seed local history from backend on first load to avoid blank cards.
+    backendHistory: Array.isArray(data.history) ? data.history : [],
+  };
 }
 
 async function refresh() {
@@ -1502,6 +1685,8 @@ setupDebugUI();
 wireEvents();
 syncAlertSettingsUI();
 setApiConsoleVisible(false);
+updateWsIndicator();
+initTzevaadomWs();
 if (isFileProtocol()) {
   renderFileProtocolHint();
 } else {

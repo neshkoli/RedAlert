@@ -2,7 +2,3 @@ name = "redalert-proxy"
 main = "index.js"
 compatibility_date = "2024-01-01"
 workers_dev = true
-
-[[kv_namespaces]]
-binding = "ALERTS_CACHE"
-id = "661b04965dd84c20abfe62ba170fd585"

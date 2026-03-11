@@ -414,6 +414,35 @@ h2 {
   flex: 1;
 }
 
+.ws-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #bdbdbd;
+  padding: 4px 7px;
+  border: 1px solid #3b3b3b;
+  border-radius: 999px;
+  background: #171717;
+  white-space: nowrap;
+}
+
+.ws-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ws-online {
+  background: #23a55a;
+}
+
+.ws-offline {
+  background: #ff3b30;
+}
+
 .settings-toggle-btn {
   padding: 6px 10px;
   border: 1px solid #555;
@@ -493,6 +522,11 @@ h2 {
   .right-panel h1 {
     font-size: 16px;
     margin-bottom: 0;
+  }
+
+  .ws-status-indicator {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 
   #statusLine {
