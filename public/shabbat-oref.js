@@ -422,10 +422,6 @@ async function poll() {
 
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) {
       histAlerts = parseHistoryJson(historyResult.value);
-      // If Alerts.json was empty but history has very recent items → use as live
-      if (liveAlerts.length === 0 && histAlerts.length > 0) {
-        liveAlerts = histAlerts;
-      }
     } else if (historyResult.status === "rejected") {
       console.warn("[oref] AlertsHistory.json fetch failed:", historyResult.reason);
     }
