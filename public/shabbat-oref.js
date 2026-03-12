@@ -629,3 +629,204 @@ async function init() {
 }
 
 init();
+
+// ===== RSS Panel =====
+const STORAGE_RSS_URL     = "shabbat_rss_url_v1";
+const STORAGE_RSS_VISIBLE = "shabbat_rss_visible_v1";
+const RSS_POLL_MS         = 5 * 60 * 1000; // refresh every 5 minutes
+// Public CORS proxy for RSS feeds — uses rss2json which parses RSS into JSON
+const RSS_PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+
+const elRssPanel        = $("rss-panel");
+const elRssList         = $("rss-list");
+const elRssScrollTrack  = $("rss-scroll-track");
+const elRssUrlInput     = $("rss-url-input");
+const elRssSettingsBtn  = $("rss-settings-btn");
+const elRssSettingsDrw  = $("rss-settings-drawer");
+const elRssUrlSaveBtn   = $("rss-url-save-btn");
+const elRssToggleBtn    = $("rss-toggle-btn");
+const elRssShowBtn      = $("rss-show-btn");
+
+const rssState = {
+  url: "",
+  items: [],
+  pollTimer: null,
+  scrollRaf: null,
+  scrollPos: 0,       // current pixel offset from top of track
+  totalHeight: 0,     // full height of rss-list in px
+  containerHeight: 0, // visible container height in px
+  speed: 0.5,         // px per animation frame (~30px/sec at 60fps)
+  pauseUntil: 0,      // timestamp — pause scrolling until this time
+};
+
+function rssTimeStr(date) {
+  return date.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+}
+
+function rssDateStr(date) {
+  return date.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" });
+}
+
+function renderRssItems() {
+  if (rssState.items.length === 0) {
+    elRssList.innerHTML = '<div class="rss-empty">אין פריטים להצגה</div>';
+    return;
+  }
+  elRssList.innerHTML = rssState.items.map((item) => {
+    const d = item.pubDate ? new Date(item.pubDate) : null;
+    const time = d && !isNaN(d) ? rssTimeStr(d) : "";
+    const date = d && !isNaN(d) ? rssDateStr(d) : "";
+    const title = (item.title || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<div class="rss-item">
+      <div class="rss-item-meta">
+        ${time ? `<span class="rss-item-time">${time}</span>` : ""}
+        ${date ? `<span class="rss-item-date">${date}</span>` : ""}
+      </div>
+      <div class="rss-item-title">${title}</div>
+    </div>`;
+  }).join("");
+}
+
+async function fetchRss() {
+  if (!rssState.url) return;
+  try {
+    const res  = await fetch(RSS_PROXY + encodeURIComponent(rssState.url), { cache: "no-store" });
+    const data = await res.json();
+    if (data && data.status === "ok" && Array.isArray(data.items)) {
+      // Sort newest first
+      rssState.items = data.items.slice().sort((a, b) => {
+        const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+        const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+        return tb - ta;
+      });
+      renderRssItems();
+      resetRssScroll();
+    }
+  } catch (e) {
+    console.warn("[rss] fetch failed:", e);
+  }
+}
+
+function startRssPoll() {
+  if (rssState.pollTimer) clearInterval(rssState.pollTimer);
+  fetchRss();
+  rssState.pollTimer = setInterval(fetchRss, RSS_POLL_MS);
+}
+
+// ---- Auto-scroll logic ----
+// Scrolls the rss-scroll-track upward continuously, then wraps back to top.
+// Pauses briefly at the top when wrapping.
+
+function resetRssScroll() {
+  rssState.scrollPos = 0;
+  elRssScrollTrack.style.transform = "translateY(0px)";
+  refreshRssDimensions();
+}
+
+function refreshRssDimensions() {
+  const container = $("rss-scroll-container");
+  rssState.containerHeight = container ? container.clientHeight : 0;
+  rssState.totalHeight     = elRssList ? elRssList.scrollHeight : 0;
+}
+
+const SCROLL_PAUSE_TOP_MS  = 2000; // pause at top
+const SCROLL_PAUSE_BTM_MS  = 1000; // pause at bottom before wrap
+
+function tickRssScroll(ts) {
+  rssState.scrollRaf = requestAnimationFrame(tickRssScroll);
+
+  if (ts < rssState.pauseUntil) return;
+
+  refreshRssDimensions();
+
+  const { containerHeight, totalHeight } = rssState;
+  // Only scroll if content overflows
+  if (totalHeight <= containerHeight) return;
+
+  rssState.scrollPos += rssState.speed;
+  const maxScroll = totalHeight - containerHeight;
+
+  if (rssState.scrollPos >= maxScroll) {
+    // Reached bottom — pause then wrap
+    rssState.scrollPos    = maxScroll;
+    rssState.pauseUntil   = ts + SCROLL_PAUSE_BTM_MS;
+    elRssScrollTrack.style.transform = `translateY(-${rssState.scrollPos}px)`;
+    setTimeout(() => {
+      rssState.scrollPos  = 0;
+      rssState.pauseUntil = performance.now() + SCROLL_PAUSE_TOP_MS;
+      elRssScrollTrack.style.transform = "translateY(0px)";
+    }, SCROLL_PAUSE_BTM_MS);
+  } else {
+    elRssScrollTrack.style.transform = `translateY(-${rssState.scrollPos}px)`;
+  }
+}
+
+function startRssScroll() {
+  if (rssState.scrollRaf) cancelAnimationFrame(rssState.scrollRaf);
+  rssState.scrollPos  = 0;
+  rssState.pauseUntil = performance.now() + SCROLL_PAUSE_TOP_MS;
+  rssState.scrollRaf  = requestAnimationFrame(tickRssScroll);
+}
+
+function stopRssScroll() {
+  if (rssState.scrollRaf) cancelAnimationFrame(rssState.scrollRaf);
+  rssState.scrollRaf = null;
+}
+
+// ---- Panel show / hide ----
+function showRssPanel() {
+  elRssPanel.classList.remove("rss-hidden");
+  localStorage.setItem(STORAGE_RSS_VISIBLE, "1");
+  startRssScroll();
+}
+
+function hideRssPanel() {
+  elRssPanel.classList.add("rss-hidden");
+  localStorage.removeItem(STORAGE_RSS_VISIBLE);
+  stopRssScroll();
+}
+
+// ---- Settings toggle ----
+elRssSettingsBtn.addEventListener("click", () => {
+  elRssSettingsDrw.classList.toggle("open");
+});
+
+// ---- Save RSS URL ----
+elRssUrlSaveBtn.addEventListener("click", () => {
+  const url = elRssUrlInput.value.trim();
+  rssState.url = url;
+  localStorage.setItem(STORAGE_RSS_URL, url);
+  elRssSettingsDrw.classList.remove("open");
+  if (url) {
+    showRssPanel();
+    startRssPoll();
+  }
+});
+
+// ---- Hide panel button ----
+elRssToggleBtn.addEventListener("click", () => {
+  elRssSettingsDrw.classList.remove("open");
+  hideRssPanel();
+});
+
+// ---- Show panel from setup bar ----
+elRssShowBtn.addEventListener("click", () => {
+  showRssPanel();
+  if (rssState.url && rssState.items.length === 0) startRssPoll();
+});
+
+// ---- Init RSS from localStorage ----
+(function initRss() {
+  const savedUrl     = localStorage.getItem(STORAGE_RSS_URL) || "";
+  const savedVisible = localStorage.getItem(STORAGE_RSS_VISIBLE) === "1";
+
+  rssState.url = savedUrl;
+  if (savedUrl) elRssUrlInput.value = savedUrl;
+
+  renderRssItems(); // render empty state initially
+
+  if (savedUrl && savedVisible) {
+    showRssPanel();
+    startRssPoll();
+  }
+}());

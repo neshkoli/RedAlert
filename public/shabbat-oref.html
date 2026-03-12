@@ -13,42 +13,71 @@
   </head>
   <body class="status-normal">
 
-    <div id="app">
+    <div id="root-layout">
 
-      <!-- Clock -->
-      <div id="clock" aria-live="off">00:00:00</div>
-
-      <!-- Main status block -->
-      <div id="status-box" aria-live="assertive" aria-atomic="true">
-        <div id="status-icon"></div>
-        <div id="status-title">מצב תקין</div>
-        <div id="status-subtitle"></div>
-        <div id="status-cities"></div>
-      </div>
-
-      <!-- History -->
-      <div id="history-section">
-        <div id="history-label">היסטוריה</div>
-        <div id="history-list" aria-live="polite"></div>
-      </div>
-
-      <!-- Setup panel: collapsed bar + expandable drawer -->
-      <div id="setup-panel">
-        <div id="setup-bar">
-          <span id="setup-bar-city">⚙ הגדרות</span>
-          <span id="conn-status">מתחבר...</span>
-          <span id="setup-toggle-icon">▲</span>
+      <!-- RSS Panel (left side, optional) -->
+      <div id="rss-panel" class="rss-hidden" aria-label="חדשות RSS">
+        <div id="rss-header">
+          <span id="rss-label">חדשות</span>
+          <button id="rss-settings-btn" type="button" title="הגדרות RSS">⚙</button>
         </div>
-        <div id="setup-drawer" class="open">
+        <div id="rss-settings-drawer">
           <div class="setup-row">
-            <label for="city-input">עיר:</label>
-            <input type="text" id="city-input" list="city-options"
-                   placeholder="הקלד שם עיר..." autocomplete="off"
-                   autocorrect="off" spellcheck="false" />
-            <datalist id="city-options"></datalist>
+            <label for="rss-url-input">כתובת RSS:</label>
+            <input type="url" id="rss-url-input" placeholder="https://..." autocomplete="off" spellcheck="false" dir="ltr" />
           </div>
-          <button id="audio-unlock-btn" type="button">הפעל שמע</button>
+          <div class="rss-settings-actions">
+            <button id="rss-url-save-btn" type="button">שמור</button>
+            <button id="rss-toggle-btn" type="button">הסתר פאנל</button>
+          </div>
         </div>
+        <div id="rss-scroll-container">
+          <div id="rss-scroll-track">
+            <div id="rss-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main app -->
+      <div id="app">
+
+        <!-- Clock -->
+        <div id="clock" aria-live="off">00:00:00</div>
+
+        <!-- Main status block -->
+        <div id="status-box" aria-live="assertive" aria-atomic="true">
+          <div id="status-icon"></div>
+          <div id="status-title">מצב תקין</div>
+          <div id="status-subtitle"></div>
+          <div id="status-cities"></div>
+        </div>
+
+        <!-- History -->
+        <div id="history-section">
+          <div id="history-label">היסטוריה</div>
+          <div id="history-list" aria-live="polite"></div>
+        </div>
+
+        <!-- Setup panel: collapsed bar + expandable drawer -->
+        <div id="setup-panel">
+          <div id="setup-bar">
+            <span id="setup-bar-city">⚙ הגדרות</span>
+            <span id="conn-status">מתחבר...</span>
+            <button id="rss-show-btn" type="button" title="הצג חדשות RSS">📰</button>
+            <span id="setup-toggle-icon">▲</span>
+          </div>
+          <div id="setup-drawer" class="open">
+            <div class="setup-row">
+              <label for="city-input">עיר:</label>
+              <input type="text" id="city-input" list="city-options"
+                     placeholder="הקלד שם עיר..." autocomplete="off"
+                     autocorrect="off" spellcheck="false" />
+              <datalist id="city-options"></datalist>
+            </div>
+            <button id="audio-unlock-btn" type="button">הפעל שמע</button>
+          </div>
+        </div>
+
       </div>
 
     </div>
