@@ -633,12 +633,15 @@ init();
 // ===== RSS Panel =====
 const STORAGE_RSS_URL     = "shabbat_rss_url_v1";
 const STORAGE_RSS_VISIBLE = "shabbat_rss_visible_v1";
-const RSS_POLL_MS         = 5 * 60 * 1000; // refresh every 5 minutes
-// Public CORS proxy for RSS feeds — uses rss2json which parses RSS into JSON
-const RSS_PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+const RSS_POLL_MS         = 5 * 60 * 1000;   // refresh every 5 minutes
+const RSS_MAX_AGE_MS      = 12 * 60 * 60 * 1000; // show items from last 12 hours
+const RSS_DEFAULT_URL     = "https://www.ynet.co.il/Integration/StoryRss1854.xml";
+// CORS proxy — returns raw XML via ?url=
+const RSS_CORS_PROXY = "https://api.allorigins.win/get?url=";
 
 const elRssPanel        = $("rss-panel");
 const elRssList         = $("rss-list");
+const elRssLabel        = $("rss-label");
 const elRssScrollTrack  = $("rss-scroll-track");
 const elRssUrlInput     = $("rss-url-input");
 const elRssSettingsBtn  = $("rss-settings-btn");
@@ -687,21 +690,58 @@ function renderRssItems() {
   }).join("");
 }
 
+// Parse raw RSS/Atom XML string → { feedTitle, items[] }
+function parseRssXml(xmlText) {
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(xmlText, "application/xml");
+
+  // Feed title: RSS <channel><title> or Atom <feed><title>
+  const feedTitleEl = doc.querySelector("channel > title") || doc.querySelector("feed > title");
+  const feedTitle   = feedTitleEl ? feedTitleEl.textContent.trim() : "";
+
+  const cutoff = Date.now() - RSS_MAX_AGE_MS;
+  const items  = [];
+
+  // RSS <item> elements
+  doc.querySelectorAll("item").forEach((el) => {
+    const title   = (el.querySelector("title")   || {}).textContent || "";
+    const pubDate = (el.querySelector("pubDate") || {}).textContent || "";
+    const ts      = pubDate ? new Date(pubDate).getTime() : 0;
+    if (ts && ts < cutoff) return; // skip items older than 12 hours
+    items.push({ title: title.trim(), pubDate: pubDate.trim(), _ts: ts });
+  });
+
+  // Atom <entry> elements (fallback)
+  if (items.length === 0) {
+    doc.querySelectorAll("entry").forEach((el) => {
+      const title   = (el.querySelector("title")   || {}).textContent || "";
+      const updated = (el.querySelector("updated") || el.querySelector("published") || {}).textContent || "";
+      const ts      = updated ? new Date(updated).getTime() : 0;
+      if (ts && ts < cutoff) return;
+      items.push({ title: title.trim(), pubDate: updated.trim(), _ts: ts });
+    });
+  }
+
+  // Sort newest first
+  items.sort((a, b) => (b._ts || 0) - (a._ts || 0));
+  return { feedTitle, items };
+}
+
 async function fetchRss() {
   if (!rssState.url) return;
   try {
-    const res  = await fetch(RSS_PROXY + encodeURIComponent(rssState.url), { cache: "no-store" });
-    const data = await res.json();
-    if (data && data.status === "ok" && Array.isArray(data.items)) {
-      // Sort newest first
-      rssState.items = data.items.slice().sort((a, b) => {
-        const ta = a.pubDate ? new Date(a.pubDate).getTime() : 0;
-        const tb = b.pubDate ? new Date(b.pubDate).getTime() : 0;
-        return tb - ta;
-      });
-      renderRssItems();
-      resetRssScroll();
-    }
+    const proxyUrl = RSS_CORS_PROXY + encodeURIComponent(rssState.url);
+    const res      = await fetch(proxyUrl, { cache: "no-store" });
+    const json     = await res.json();
+    const xmlText  = json && json.contents ? json.contents : "";
+    if (!xmlText) return;
+
+    const { feedTitle, items } = parseRssXml(xmlText);
+
+    rssState.items = items;
+    if (feedTitle) elRssLabel.textContent = feedTitle;
+    renderRssItems();
+    resetRssScroll();
   } catch (e) {
     console.warn("[rss] fetch failed:", e);
   }
@@ -812,20 +852,20 @@ elRssToggleBtn.addEventListener("click", () => {
 // ---- Show panel from setup bar ----
 elRssShowBtn.addEventListener("click", () => {
   showRssPanel();
-  if (rssState.url && rssState.items.length === 0) startRssPoll();
+  if (rssState.items.length === 0) startRssPoll();
 });
 
 // ---- Init RSS from localStorage ----
 (function initRss() {
-  const savedUrl     = localStorage.getItem(STORAGE_RSS_URL) || "";
+  const savedUrl     = localStorage.getItem(STORAGE_RSS_URL) || RSS_DEFAULT_URL;
   const savedVisible = localStorage.getItem(STORAGE_RSS_VISIBLE) === "1";
 
   rssState.url = savedUrl;
-  if (savedUrl) elRssUrlInput.value = savedUrl;
+  elRssUrlInput.value = savedUrl;
 
   renderRssItems(); // render empty state initially
 
-  if (savedUrl && savedVisible) {
+  if (savedVisible) {
     showRssPanel();
     startRssPoll();
   }
