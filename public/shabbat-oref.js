@@ -117,24 +117,25 @@ elSetupBar.addEventListener("click", () => {
   elToggleIcon.textContent = open ? "▲" : "▼";
 });
 
-// ===== Threat SVG icons =====
-const THREAT_SVGS = {
-  missiles: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 8.5 9.5H11V19l1 2 1-2V9.5h2.5L12 2zm-1.5 19.5h3l-.8-1.5h-1.4l-.8 1.5z"/></svg>`,
-  hostileAircraftIntrusion: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`,
-  terroristInfiltration: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`,
-  hazardousMaterials: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
-  earthQuake: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,13 5,8 8,15 11,10 14,13 17,5 20,17 22,13"/></svg>`,
-  tsunami: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17c3 0 3-2 6-2s3 2 6 2 3-2 6-2v2c-3 0-3 2-6 2s-3-2-6-2-3 2-6 2v-2zm0-4c3 0 3-2 6-2s3 2 6 2 3-2 6-2v2c-3 0-3 2-6 2s-3-2-6-2-3 2-6 2v-2zm13-4h-2c0-2.21-1.79-4-4-4S6 6.79 6 9H4c0-3.31 2.69-6 6-6V2h4v1c3.31 0 6 2.69 6 6z"/></svg>`,
-  radiologicalEvent: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
-  general: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
-  ended: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14-4-4 1.41-1.41L10 13.17l6.59-6.59L18 8l-8 8z"/></svg>`,
-};
-
+// ===== Threat SVG icons — from app.js getAlertTypeIconSvg =====
 function getThreatSvg(type) {
-  if (!type || type === "normal") return THREAT_SVGS.general;
-  if (type === "ended") return THREAT_SVGS.ended;
-  const base = type.replace(/Drill$/, "");
-  return THREAT_SVGS[base] || THREAT_SVGS.general;
+  const base = (type || "").replace(/Drill$/, "");
+  switch (base) {
+    case "missiles":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(8,8) scale(1.9)"><path d="M25.744,6.604C26.08,6.267,26.107,6.02,25.48,6.02c-0.628,0-4.556,0-5.068,0c-0.512,0-0.533,0.016-0.814,0.297c-0.281,0.281-4.604,4.607-4.604,4.607s5.413,0,5.877,0c0.465,0,0.633-0.037,0.912-0.318C22.063,10.326,25.408,6.94,25.744,6.604z"/><path d="M19.375,0.235c0.336-0.335,0.584-0.363,0.584,0.264s0,4.555,0,5.067S19.943,6.1,19.662,6.381s-4.607,4.604-4.607,4.604s0-5.414,0-5.878c0-0.464,0.037-0.632,0.318-0.912C15.653,3.916,19.039,0.571,19.375,0.235z"/><path d="M1.621,16.53c-2.161,2.162-2.162,5.666-0.001,7.828c2.161,2.161,5.667,2.161,7.828,0c0.93-0.931,6.001-6,6.931-6.93c2.161-2.161,2.161-5.666,0-7.829c-2.162-2.162-5.666-2.161-7.828,0C7.621,10.531,2.551,15.6,1.621,16.53z"/></g></svg>`;
+    case "hostileAircraftIntrusion":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(6,6) scale(1.6)"><path d="M31.207,0.82 C29.961,-0.43 27.771,-0.137 26.518,1.119 L20.141,7.481 L8.313,3.061 C7.18,2.768 6.039,2.389 4.634,3.798 C3.917,4.516 2.427,6.01 4.634,8.221 L12.744,14.861 L7.467,20.127 L2.543,18.896 C1.813,18.708 1.321,18.855 0.946,19.269 C0.757,19.505 -0.614,20.521 0.342,21.479 L6.067,25.933 L10.521,31.658 C11.213,32.352 11.856,31.919 12.735,31.084 C13.292,30.526 13.172,30.239 13.004,29.426 L11.892,24.536 L17.133,19.277 L23.763,27.389 C25.969,29.6 27.46,28.105 28.177,27.389 C29.583,25.979 29.205,24.837 28.912,23.702 L24.529,11.854 L30.88,5.481 C32.133,4.226 32.454,2.069 31.207,0.82"/></g></svg>`;
+    case "terroristInfiltration":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(8,8) scale(0.09)"><path d="M460.401,45.34c1.653-1.652,2.582-3.894,2.582-6.232c0-2.337-0.928-4.579-2.582-6.232L442.155,14.63c-3.442-3.442-9.023-3.442-12.464,0l-7.477,7.477L402.686,2.581c-3.442-3.442-9.023-3.442-12.464,0l-18.695,18.695c-2.39,2.389-3.202,5.936-2.092,9.127l11.479,33.003l-40.917,40.918l-37.362,1.678c-2.199,0.099-4.281,1.016-5.837,2.572L51.599,353.775c-1.653,1.652-2.582,3.894-2.582,6.232v24.962c0,2.337,0.928,4.579,2.582,6.232l35.046,35.046c0.753,0.753,1.611,1.331,2.524,1.755l-0.004,0.007l18.33,8.51c6.621,3.074,11.828,8.472,14.663,15.197l23.136,54.893c0.91,2.158,2.641,3.865,4.81,4.745c1.062,0.431,2.187,0.646,3.312,0.646c1.173,0,2.344-0.234,3.445-0.702l41.303-17.54c4.105-1.743,6.261-6.279,5.02-10.563l-23.448-81l42.728-42.728c19.839,12.722,41.579,22.375,64.462,28.452c19.304,5.127,39.192,7.691,59.083,7.691c18.842,0,37.688-2.302,56.04-6.909c4.475-1.123,7.326-5.507,6.538-10.052l-11.508-66.435c-0.428-2.468-1.885-4.636-4.006-5.965c-2.123-1.329-4.71-1.692-7.115-1c-48.883,14.07-101.452,1.322-138.374-33.253l3.728-17.568L460.401,45.34z M396.455,21.278l13.294,13.294L394.761,49.56L387.9,29.833L396.455,21.278z M435.923,33.325l5.782,5.782L294.53,186.281l-5.782-5.782L435.923,33.325z M306.843,123.457l14.68-0.659l-45.238,45.238l-7.01-7.01L306.843,123.457z M92.877,407.55l-26.233-26.231v-17.661l138.868-138.868l28.105,28.105l-3.747,17.661L92.877,407.55z M184.079,480.591l-25.974,11.029L138.4,444.87c-4.54-10.772-12.88-19.416-23.483-24.338l-6.893-3.2l33.51-33.51l20.454,20.454L184.079,480.591z M169.825,387.181l-15.826-15.826l11.153-11.153l15.826,15.826L169.825,387.181z M193.443,363.563l-15.826-15.826l12.941-12.941c5.51,5.1,11.257,9.917,17.218,14.433L193.443,363.563z M381.338,324.614l8.459,48.828c-32.44,6.822-66.268,5.961-98.345-2.558c-32.927-8.744-63.326-25.458-88.433-48.548l35.102-35.102C276.983,322.076,330.39,335.998,381.338,324.614z M243.233,237.578l-25.256-25.256l38.834-38.832l25.256,25.255L243.233,237.578z"/><path d="M133.81,330.799c-3.442-3.442-9.023-3.442-12.464,0l-21.027,21.026c-3.442,3.442-3.442,9.022,0,12.464c1.722,1.722,3.977,2.582,6.232,2.582c2.255,0,4.511-0.86,6.232-2.582l21.027-21.026C137.252,339.821,137.252,334.241,133.81,330.799z"/></g></svg>`;
+    case "earthQuake":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M8 44h10l6-10 6 8 6-12 6 8h14v6H41l-5-7-6 12-7-9-4 7H8z"/></svg>`;
+    case "tsunami":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M6 40c6 0 6-5 12-5s6 5 12 5 6-5 12-5 6 5 12 5 6-5 12-5v8c-6 0-6 5-12 5s-6-5-12-5-6 5-12 5-6-5-12-5-6 5-12 5v-8z"/></svg>`;
+    case "ended":
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M32 8C18.7 8 8 18.7 8 32s10.7 24 24 24 24-10.7 24-24S45.3 8 32 8zm-5 34-10-10 3.4-3.4L27 35.2l15.6-15.6L46 23 27 42z"/></svg>`;
+    default:
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M32 8l24 44H8z"/><rect x="29" y="24" width="6" height="16" rx="2" fill="#a50000"/><circle cx="32" cy="45" r="2.8" fill="#a50000"/></svg>`;
+  }
 }
 
 function threatSevClass(type) {
@@ -196,7 +197,9 @@ function setStatus(newStatus, cities, instruction, type) {
   const cfg = STATUS_CONFIG[newStatus];
 
   document.body.className = cfg.bodyClass;
-  elStatusIcon.textContent  = cfg.icon;
+  elStatusIcon.innerHTML  = (newStatus === "alert" || newStatus === "warning")
+    ? getThreatSvg(type)
+    : cfg.icon;
   elStatusTitle.textContent = cfg.title;
   elStatusSub.textContent   = cfg.sub || instruction || "";
   elStatusCities.textContent = cities && cities.length
@@ -337,6 +340,8 @@ function parseHistoryJson(json) {
 }
 
 // ===== Live alert processing =====
+// Background color, tone, and status title only change for the selected city.
+// If no city is selected, status stays "normal" regardless of incoming alerts.
 function processLive(liveAlerts) {
   state._lastLive = liveAlerts;
   if (!state.city) return;
@@ -358,6 +363,7 @@ function processLive(liveAlerts) {
       elStatusCities.textContent = cities.slice(0, 6).join(" • ");
     }
   } else {
+    // Only transition to "ended" if we were previously in an alert/warning for our city
     if (state.status === "alert" || state.status === "warning") {
       setStatus("ended", [], "");
     }
