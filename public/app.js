@@ -1693,3 +1693,52 @@ if (isFileProtocol()) {
   refresh();
   setInterval(refresh, REFRESH_MS);
 }
+
+// ===== Pull-to-refresh (mobile) =====
+(function () {
+  const THRESHOLD = 72;
+  const ind = document.getElementById("ptr-indicator");
+  const scrollEl = document.querySelector(".right-panel");
+  if (!ind || !scrollEl) return;
+
+  let startY = 0, pullDy = 0, active = false;
+
+  function reset(trigger) {
+    if (trigger) {
+      ind.textContent = "↻";
+      ind.style.opacity = "1";
+      ind.style.transform = "translate(-50%, 10px)";
+      refresh();
+      setTimeout(() => {
+        ind.style.transition = "opacity 0.3s, transform 0.3s";
+        ind.style.opacity = "0";
+        ind.style.transform = "translate(-50%, -52px)";
+        setTimeout(() => { ind.style.transition = ""; }, 350);
+      }, 600);
+    } else {
+      ind.style.opacity = "0";
+      ind.style.transform = "translate(-50%, -52px)";
+    }
+    startY = 0; pullDy = 0; active = false;
+  }
+
+  scrollEl.addEventListener("touchstart", (e) => {
+    if (scrollEl.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    active = true;
+  }, { passive: true });
+
+  scrollEl.addEventListener("touchmove", (e) => {
+    if (!active) return;
+    pullDy = e.touches[0].clientY - startY;
+    if (pullDy <= 0) { reset(false); return; }
+    ind.style.opacity = String(Math.min(pullDy / THRESHOLD, 1));
+    ind.style.transform = `translate(-50%, ${Math.min(pullDy * 0.45 - 52, 10)}px)`;
+    ind.textContent = pullDy >= THRESHOLD ? "↑" : "↓";
+  }, { passive: true });
+
+  scrollEl.addEventListener("touchend", () => {
+    if (!active) return;
+    reset(pullDy >= THRESHOLD);
+  });
+}());

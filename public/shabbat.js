@@ -503,6 +503,53 @@ elAudioBtn.addEventListener("click", () => {
   setTimeout(() => playTone("ended"), 100);
 });
 
+// ===== Pull-to-refresh =====
+(function () {
+  const THRESHOLD = 72;
+  const ind = document.getElementById("ptr-indicator");
+  let startY = 0, pullDy = 0, active = false;
+
+  function reset(trigger) {
+    if (trigger) {
+      ind.textContent = "↻";
+      ind.style.opacity = "1";
+      ind.style.transform = "translate(-50%, 10px)";
+      poll();
+      setTimeout(() => {
+        ind.style.transition = "opacity 0.3s, transform 0.3s";
+        ind.style.opacity = "0";
+        ind.style.transform = "translate(-50%, -52px)";
+        setTimeout(() => { ind.style.transition = ""; }, 350);
+      }, 600);
+    } else {
+      ind.style.opacity = "0";
+      ind.style.transform = "translate(-50%, -52px)";
+    }
+    startY = 0; pullDy = 0; active = false;
+  }
+
+  document.addEventListener("touchstart", (e) => {
+    const inHistory = elHistoryList.contains(e.target);
+    if (inHistory && elHistoryList.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    active = true;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!active) return;
+    pullDy = e.touches[0].clientY - startY;
+    if (pullDy <= 0) { reset(false); return; }
+    ind.style.opacity = String(Math.min(pullDy / THRESHOLD, 1));
+    ind.style.transform = `translate(-50%, ${Math.min(pullDy * 0.45 - 52, 10)}px)`;
+    ind.textContent = pullDy >= THRESHOLD ? "↑" : "↓";
+  }, { passive: true });
+
+  document.addEventListener("touchend", () => {
+    if (!active) return;
+    reset(pullDy >= THRESHOLD);
+  });
+}());
+
 // ===== Init =====
 async function init() {
   await loadCities();

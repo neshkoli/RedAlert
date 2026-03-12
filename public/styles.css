@@ -572,3 +572,28 @@ h2 {
     left: 0;
   }
 }
+
+/* ===== Pull-to-refresh indicator ===== */
+#ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -52px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform, opacity;
+}
+
+@media (min-width: 901px) {
+  #ptr-indicator { display: none; }
+}
