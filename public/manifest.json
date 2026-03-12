@@ -1,0 +1,18 @@
+{
+  "name": "שומר שבת — פיקוד העורף",
+  "short_name": "שומר שבת",
+  "description": "מעקב התראות פיקוד העורף למצב שבת",
+  "start_url": "./shabbat.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16a34a",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
