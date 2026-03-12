@@ -1,7 +1,49 @@
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const { buildStaticData } = require("./build-static-data");
+
+const OREF_PROXY_ROUTES = {
+  "/api/oref/alerts":  "https://www.oref.org.il/warningMessages/alert/Alerts.json",
+  "/api/oref/history": "https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json",
+};
+
+function proxyOref(targetUrl, res) {
+  const url = new URL(targetUrl + "?" + Math.round(Date.now() / 1000));
+  const options = {
+    hostname: url.hostname,
+    path: url.pathname + url.search,
+    method: "GET",
+    headers: {
+      "Pragma": "no-cache",
+      "Cache-Control": "max-age=0",
+      "Referer": "https://www.oref.org.il/12481-he/Pakar.aspx",
+      "X-Requested-With": "XMLHttpRequest",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36",
+    },
+  };
+
+  const proxyRes = https.request(options, (upstream) => {
+    const chunks = [];
+    upstream.on("data", (c) => chunks.push(c));
+    upstream.on("end", () => {
+      res.writeHead(upstream.statusCode, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.end(Buffer.concat(chunks));
+    });
+  });
+
+  proxyRes.on("error", (err) => {
+    res.writeHead(502, { "Content-Type": "text/plain" });
+    res.end("Proxy error: " + err.message);
+  });
+
+  proxyRes.end();
+}
 
 const PORT = Number(process.env.PORT || 8080);
 const AUTO_REFRESH_SECONDS = Number(process.env.AUTO_REFRESH_SECONDS || 0);
@@ -28,6 +70,20 @@ function getSafePath(urlPath) {
 }
 
 const server = http.createServer((req, res) => {
+  // Handle OPTIONS preflight for proxy routes
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET" });
+    res.end();
+    return;
+  }
+
+  // oref proxy routes
+  const routeKey = (req.url || "").split("?")[0];
+  if (OREF_PROXY_ROUTES[routeKey]) {
+    proxyOref(OREF_PROXY_ROUTES[routeKey], res);
+    return;
+  }
+
   const filePath = getSafePath(req.url || "/");
   if (!filePath) {
     res.writeHead(403);

@@ -5,9 +5,17 @@
 
 const TZEVAADOM_NOTIFICATIONS_URL = "https://api.tzevaadom.co.il/notifications?";
 const TZEVAADOM_HISTORY_URL = "https://api.tzevaadom.co.il/alerts-history/?";
-const HISTORY_MAX_ITEMS = 200;
 const LIVE_MAX_AGE_SECONDS = 180;
-const HISTORY_MAX_AGE_SECONDS = 24 * 60 * 60;
+
+const OREF_ALERTS_URL  = "https://www.oref.org.il/warningMessages/alert/Alerts.json";
+const OREF_HISTORY_URL = "https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json";
+const OREF_HEADERS = {
+  "Pragma": "no-cache",
+  "Cache-Control": "max-age=0",
+  "Referer": "https://www.oref.org.il/12481-he/Pakar.aspx",
+  "X-Requested-With": "XMLHttpRequest",
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36",
+};
 
 const THREAT_TYPE_MAP = {
   0: "missiles",
@@ -124,7 +132,6 @@ function normalizeHistory(historyFeed, nowUnix) {
     for (const alert of group.alerts) {
       if (!alert || !Array.isArray(alert.cities) || alert.cities.length === 0) continue;
       const eventUnix = parseIntOr(alert.time, nowUnix);
-      if (nowUnix - eventUnix > HISTORY_MAX_AGE_SECONDS) continue;
       const threat = parseIntOr(alert.threat, 8);
       const isDrill = Boolean(alert.isDrill);
       const type = normalizeThreatType(threat, isDrill);
@@ -142,7 +149,7 @@ function normalizeHistory(historyFeed, nowUnix) {
   }
 
   flat.sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
-  return flat.slice(0, HISTORY_MAX_ITEMS);
+  return flat;
 }
 
 async function fetchJson(url) {
@@ -151,6 +158,20 @@ async function fetchJson(url) {
     throw new Error(`HTTP ${response.status} from ${url}`);
   }
   return response.json();
+}
+
+async function fetchOrefRaw(url) {
+  const ts = Math.round(Date.now() / 1000);
+  const response = await fetch(`${url}?${ts}`, {
+    headers: OREF_HEADERS,
+    cf: { cacheTtl: 0, cacheEverything: false },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} from ${url}`);
+  }
+  // Return raw buffer so the browser-side JS can decode (UTF-16-LE etc.)
+  const buffer = await response.arrayBuffer();
+  return buffer;
 }
 
 function buildErrorPayload(nowIso, message) {
@@ -175,39 +196,146 @@ export default {
       return new Response("Method Not Allowed", { status: 405, headers: CORS_HEADERS });
     }
 
+    const url = new URL(request.url);
+
+    // /oref/alerts — synthesize oref Alerts.json format from tzevaadom live data
+    // (oref.org.il blocks Cloudflare IPs; tzevaadom is the reliable upstream)
+    if (url.pathname === "/oref/alerts") {
+      try {
+        const ts = Math.round(Date.now() / 1000);
+        const res = await fetch(TZEVAADOM_NOTIFICATIONS_URL, {
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+        const notifications = res.ok ? await res.json() : [];
+        const live = normalizeLiveAlerts(Array.isArray(notifications) ? notifications : [], ts);
+
+        // Synthesize oref Alerts.json shape: { id, cat, title, data: [city,...] }
+        // Use first live alert if present, else empty
+        let orefPayload;
+        if (live.length > 0) {
+          const first = live[0];
+          const CAT_BY_TYPE = {
+            missiles: 1, general: 2, earthQuake: 3, radiologicalEvent: 4,
+            tsunami: 5, hostileAircraftIntrusion: 6, hazardousMaterials: 7,
+            newsFlash: 10, terroristInfiltration: 13,
+            missilesDrill: 101, generalDrill: 102, earthQuakeDrill: 103,
+            radiologicalEventDrill: 104, tsunamiDrill: 105,
+            hostileAircraftIntrusionDrill: 106, hazardousMaterialsDrill: 107,
+            terroristInfiltrationDrill: 113,
+          };
+          const allCities = live.flatMap((a) => a.cities);
+          orefPayload = {
+            id: first.id || String(ts),
+            cat: String(CAT_BY_TYPE[first.type] || 1),
+            title: first.instructions || "",
+            data: [...new Set(allCities)],
+          };
+        } else {
+          orefPayload = "";  // empty string = no active alert (oref convention)
+        }
+
+        if (request.method === "HEAD") {
+          return new Response(null, { status: 200, headers: CORS_HEADERS });
+        }
+        return new Response(
+          typeof orefPayload === "string" ? orefPayload : JSON.stringify(orefPayload),
+          { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json; charset=utf-8" } }
+        );
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 502, headers: CORS_HEADERS });
+      }
+    }
+
+    // /oref/history — synthesize oref AlertsHistory.json format from tzevaadom history
+    if (url.pathname === "/oref/history") {
+      try {
+        const res = await fetch(TZEVAADOM_HISTORY_URL, {
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+        const historyFeed = res.ok ? await res.json() : [];
+        const nowUnix = Math.floor(Date.now() / 1000);
+        const normalized = normalizeHistory(Array.isArray(historyFeed) ? historyFeed : [], nowUnix);
+
+        // Synthesize oref AlertsHistory.json shape: [{alertDate, data, category, title, id}]
+        const TYPE_TO_HIST_CAT = {
+          missiles: 1, hostileAircraftIntrusion: 2, general: 3,
+          earthQuake: 7, radiologicalEvent: 9, terroristInfiltration: 10,
+          tsunami: 11, hazardousMaterials: 12, newsFlash: 13,
+          missilesDrill: 15, hostileAircraftIntrusionDrill: 16,
+          generalDrill: 17, earthQuakeDrill: 21, radiologicalEventDrill: 23,
+          terroristInfiltrationDrill: 24, tsunamiDrill: 25, hazardousMaterialsDrill: 26,
+        };
+        const orefHistory = normalized.flatMap((item) =>
+          item.cities.map((city) => ({
+            alertDate: item.timestamp
+              ? new Date(item.timestamp).toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" })
+              : new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" }),
+            data: city,
+            category: String(TYPE_TO_HIST_CAT[item.type] || 1),
+            title: item.instructions || "",
+            id: item.id || null,
+          }))
+        );
+
+        if (request.method === "HEAD") {
+          return new Response(null, { status: 200, headers: CORS_HEADERS });
+        }
+        return new Response(JSON.stringify(orefHistory), {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json; charset=utf-8" },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 502, headers: CORS_HEADERS });
+      }
+    }
+
     const nowIso = new Date().toISOString();
     const nowUnix = Math.floor(Date.now() / 1000);
 
     try {
-      // Primary source for active alerts
+      // Fetch notifications and history in parallel
       let notifications = [];
       let notificationsError = null;
-      try {
-        notifications = await fetchJson(TZEVAADOM_NOTIFICATIONS_URL);
-      } catch (err) {
-        notificationsError = err instanceof Error ? err.message : "notifications fetch failed";
-      }
-      const live = normalizeLiveAlerts(notifications, nowUnix);
-
-      // History source and fallback path
       let historyFeed = [];
-      if (live.length === 0 || notificationsError) {
-        historyFeed = await fetchJson(TZEVAADOM_HISTORY_URL);
+      let historyError = null;
+
+      const [notifResult, histResult] = await Promise.allSettled([
+        fetchJson(TZEVAADOM_NOTIFICATIONS_URL),
+        fetchJson(TZEVAADOM_HISTORY_URL),
+      ]);
+
+      if (notifResult.status === "fulfilled") {
+        notifications = notifResult.value;
+      } else {
+        notificationsError = notifResult.reason instanceof Error
+          ? notifResult.reason.message
+          : "notifications fetch failed";
       }
+
+      if (histResult.status === "fulfilled") {
+        historyFeed = histResult.value;
+      } else {
+        historyError = histResult.reason instanceof Error
+          ? histResult.reason.message
+          : "history fetch failed";
+      }
+
+      const live = normalizeLiveAlerts(notifications, nowUnix);
       const history = normalizeHistory(historyFeed, nowUnix);
 
       const payload = {
         ok: true,
         generatedAt: nowIso,
         lastPollAt: nowIso,
-        error: null,
+        error: notificationsError || historyError || null,
         live,
         history,
         api: {
           source: "tzevaadom",
           error: notificationsError,
+          historyError,
           notificationsCount: Array.isArray(notifications) ? notifications.length : 0,
-          usedHistoryFallback: live.length === 0 || Boolean(notificationsError),
+          usedHistoryFallback: false,
         },
       };
 

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="שומר שבת" />
+    <link rel="manifest" href="./manifest.json" />
+    <title>שומר שבת — ישיר מאורף</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./shabbat.css" />
+  </head>
+  <body class="status-normal">
+
+    <div id="app">
+
+      <!-- Clock -->
+      <div id="clock" aria-live="off">00:00:00</div>
+
+      <!-- Main status block -->
+      <div id="status-box" aria-live="assertive" aria-atomic="true">
+        <div id="status-icon"></div>
+        <div id="status-title">מצב תקין</div>
+        <div id="status-subtitle"></div>
+        <div id="status-cities"></div>
+      </div>
+
+      <!-- History -->
+      <div id="history-section">
+        <div id="history-label">היסטוריה</div>
+        <div id="history-list" aria-live="polite"></div>
+      </div>
+
+      <!-- Setup panel: collapsed bar + expandable drawer -->
+      <div id="setup-panel">
+        <div id="setup-bar">
+          <span id="setup-bar-city">⚙ הגדרות</span>
+          <span id="conn-status">מתחבר...</span>
+          <span id="setup-toggle-icon">▲</span>
+        </div>
+        <div id="setup-drawer" class="open">
+          <div class="setup-row">
+            <label for="city-input">עיר:</label>
+            <input type="text" id="city-input" list="city-options"
+                   placeholder="הקלד שם עיר..." autocomplete="off"
+                   autocorrect="off" spellcheck="false" />
+            <datalist id="city-options"></datalist>
+          </div>
+          <button id="audio-unlock-btn" type="button">הפעל שמע</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="ptr-indicator" aria-hidden="true">↓</div>
+    <script src="./shabbat-oref.js"></script>
+  </body>
+</html>
