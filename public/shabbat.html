@@ -32,16 +32,22 @@
         <div id="history-list" aria-live="polite"></div>
       </div>
 
-      <!-- Setup panel (hidden once city chosen + audio unlocked) -->
+      <!-- Setup panel: collapsed bar + expandable drawer -->
       <div id="setup-panel">
-        <div class="setup-row">
-          <label for="city-select">עיר מעקב:</label>
-          <select id="city-select">
-            <option value="">-- בחר עיר --</option>
-          </select>
+        <div id="setup-bar">
+          <span id="setup-bar-city">⚙ הגדרות</span>
+          <span id="conn-status">מתחבר...</span>
+          <span id="setup-toggle-icon">▲</span>
         </div>
-        <button id="audio-unlock-btn" type="button">הפעל שמע</button>
-        <div id="conn-status">מתחבר...</div>
+        <div id="setup-drawer" class="open">
+          <div class="setup-row">
+            <label for="city-select">עיר:</label>
+            <select id="city-select">
+              <option value="">-- בחר עיר --</option>
+            </select>
+          </div>
+          <button id="audio-unlock-btn" type="button">הפעל שמע</button>
+        </div>
       </div>
 
     </div>

@@ -26,7 +26,8 @@ const state = {
   city: "",                        // selected city (Hebrew name)
   status: "normal",                // "normal" | "warning" | "alert" | "ended"
   endedTimer: null,                // setTimeout handle for ended → normal
-  history: [],                     // [{ time, icon, text }]
+  history: [],                     // [{ _ts, time, icon, text }]
+  shownHistoryIds: new Set(),      // API group IDs already added to history
   audioCtx: null,
   audioUnlocked: false,
   wakeLock: null,
@@ -47,10 +48,19 @@ const elStatusTitle  = $("status-title");
 const elStatusSub    = $("status-subtitle");
 const elStatusCities = $("status-cities");
 const elHistoryList  = $("history-list");
-const elSetupPanel   = $("setup-panel");
 const elCitySelect   = $("city-select");
 const elAudioBtn     = $("audio-unlock-btn");
 const elConnStatus   = $("conn-status");
+const elSetupBar     = $("setup-bar");
+const elSetupBarCity = $("setup-bar-city");
+const elSetupDrawer  = $("setup-drawer");
+const elToggleIcon   = $("setup-toggle-icon");
+
+// ===== Setup panel toggle =====
+elSetupBar.addEventListener("click", () => {
+  const open = elSetupDrawer.classList.toggle("open");
+  elToggleIcon.textContent = open ? "▲" : "▼";
+});
 
 // ===== Helpers =====
 function normName(s) {
@@ -146,7 +156,7 @@ function addHistory(statusType, cities, instruction) {
     return; // don't log "normal" resets
   }
 
-  state.history.unshift({ time: timeStr(now), icon, text });
+  state.history.unshift({ _ts: now.getTime(), time: timeStr(now), icon, text });
   if (state.history.length > MAX_HISTORY) state.history.pop();
   renderHistory();
 }
@@ -165,6 +175,48 @@ function renderHistory() {
   `).join("");
 }
 renderHistory();
+
+// ===== API history =====
+function processApiHistory(payload) {
+  if (!state.city || !Array.isArray(payload.history) || payload.history.length === 0) return;
+
+  const needle = normName(state.city).toLowerCase();
+  const groups = new Map(); // id → { _ts, type, instructions, cities[] }
+
+  for (const item of payload.history) {
+    if (!Array.isArray(item.cities) || item.cities.length === 0) continue;
+    const match = item.cities.some((c) => normName(c).toLowerCase() === needle);
+    if (!match) continue;
+
+    const id = String(item.id || item.timestamp);
+    const ts = Date.parse(item.timestamp) || 0;
+
+    if (!groups.has(id)) {
+      groups.set(id, { _ts: ts, type: item.type, instructions: item.instructions, cities: [...item.cities] });
+    } else {
+      const g = groups.get(id);
+      if (ts > g._ts) g._ts = ts;
+      for (const c of item.cities) {
+        if (!g.cities.includes(c)) g.cities.push(c);
+      }
+    }
+  }
+
+  let added = 0;
+  for (const [id, g] of groups) {
+    if (state.shownHistoryIds.has(id)) continue;
+    state.shownHistoryIds.add(id);
+    const icon = alertSeverity(g.type) === "alert" ? "🔴" : "🟠";
+    const date = new Date(g._ts);
+    state.history.push({ _ts: g._ts, time: timeStr(date), icon, text: g.instructions + " — " + g.cities.slice(0, 4).join(", ") });
+    added++;
+  }
+
+  if (added === 0) return;
+  state.history.sort((a, b) => (b._ts || 0) - (a._ts || 0));
+  if (state.history.length > MAX_HISTORY) state.history.length = MAX_HISTORY;
+  renderHistory();
+}
 
 // ===== Audio =====
 function initAudio() {
@@ -269,6 +321,7 @@ async function loadCities() {
     if (saved) {
       elCitySelect.value = saved;
       state.city = saved;
+      elSetupBarCity.textContent = "עיר: " + saved;
     }
   } catch (e) {
     console.error("Failed to load cities:", e);
@@ -279,7 +332,11 @@ elCitySelect.addEventListener("change", () => {
   state.city = elCitySelect.value;
   localStorage.setItem(STORAGE_CITY, state.city);
   elStatusCities.textContent = state.city;
-  // Re-evaluate with current data
+  elSetupBarCity.textContent = state.city ? "עיר: " + state.city : "⚙ הגדרות";
+  // Reset history and re-load from last payload for new city
+  state.history = [];
+  state.shownHistoryIds.clear();
+  renderHistory();
   if (state._lastPayload) processPayload(state._lastPayload);
 });
 
@@ -298,6 +355,7 @@ function mergeAlerts(apiLive) {
 
 function processPayload(payload) {
   state._lastPayload = payload;
+  processApiHistory(payload);
   if (!state.city) return;
 
   const live   = mergeAlerts(payload.live || []);
