@@ -63,9 +63,39 @@ elSetupBar.addEventListener("click", () => {
   elToggleIcon.textContent = open ? "▲" : "▼";
 });
 
+// ===== Threat SVG icons =====
+const THREAT_SVGS = {
+  missiles: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 8.5 9.5H11V19l1 2 1-2V9.5h2.5L12 2zm-1.5 19.5h3l-.8-1.5h-1.4l-.8 1.5z"/></svg>`,
+  hostileAircraftIntrusion: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5C13 2.67 12.33 2 11.5 2S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`,
+  terroristInfiltration: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`,
+  hazardousMaterials: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
+  earthQuake: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,13 5,8 8,15 11,10 14,13 17,5 20,17 22,13"/></svg>`,
+  tsunami: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17c3 0 3-2 6-2s3 2 6 2 3-2 6-2v2c-3 0-3 2-6 2s-3-2-6-2-3 2-6 2v-2zm0-4c3 0 3-2 6-2s3 2 6 2 3-2 6-2v2c-3 0-3 2-6 2s-3-2-6-2-3 2-6 2v-2zm13-4h-2c0-2.21-1.79-4-4-4S6 6.79 6 9H4c0-3.31 2.69-6 6-6V2h4v1c3.31 0 6 2.69 6 6z"/></svg>`,
+  radiologicalEvent: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
+  general: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
+  ended: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14-4-4 1.41-1.41L10 13.17l6.59-6.59L18 8l-8 8z"/></svg>`,
+};
+
+function getThreatSvg(type) {
+  if (!type || type === "normal") return THREAT_SVGS.general;
+  if (type === "ended") return THREAT_SVGS.ended;
+  const base = type.replace(/Drill$/, "");
+  return THREAT_SVGS[base] || THREAT_SVGS.general;
+}
+
+function threatSevClass(type) {
+  if (!type || type === "normal") return "warning";
+  if (type === "ended") return "ended";
+  return RED_TYPES.has(type) ? "alert" : "warning";
+}
+
 // ===== Helpers =====
 function normName(s) {
   return String(s || "").replace(/[\u200f\u200e]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function dateStr(date) {
+  return `${date.getDate()}/${date.getMonth() + 1}`;
 }
 
 function cityInAlert(alert) {
@@ -100,7 +130,7 @@ const STATUS_CONFIG = {
   ended:   { bodyClass: "status-ended",   icon: "✓",  title: "חזרה לשגרה",      sub: "האירוע הסתיים" },
 };
 
-function setStatus(newStatus, cities, instruction) {
+function setStatus(newStatus, cities, instruction, type) {
   const prev = state.status;
   if (newStatus === prev && newStatus !== "normal") return; // no change (except normal can refresh cities)
 
@@ -126,7 +156,7 @@ function setStatus(newStatus, cities, instruction) {
 
   // History entry
   if (newStatus !== prev) {
-    addHistory(newStatus, cities, instruction);
+    addHistory(newStatus, cities, instruction, type);
     playTone(newStatus);
   }
 
@@ -140,24 +170,22 @@ function setStatus(newStatus, cities, instruction) {
 }
 
 // ===== History =====
-function addHistory(statusType, cities, instruction) {
+function addHistory(statusType, cities, instruction, type) {
   const now = new Date();
-  let icon, text;
+  let text;
 
   if (statusType === "alert") {
-    icon = "🔴";
     text = (instruction || "צבע אדום") + (cities && cities.length ? " — " + cities.slice(0, 4).join(", ") : "");
   } else if (statusType === "warning") {
-    icon = "🟠";
     text = (instruction || "אזהרה") + (cities && cities.length ? " — " + cities.slice(0, 4).join(", ") : "");
   } else if (statusType === "ended") {
-    icon = "🟢";
     text = "חזרה לשגרה" + (state.city ? " — " + state.city : "");
   } else {
     return; // don't log "normal" resets
   }
 
-  state.history.unshift({ _ts: now.getTime(), time: timeStr(now), icon, text });
+  const resolvedType = type || (statusType === "ended" ? "ended" : "general");
+  state.history.unshift({ _ts: now.getTime(), time: timeStr(now), date: dateStr(now), type: resolvedType, text });
   if (state.history.length > MAX_HISTORY) state.history.pop();
   renderHistory();
 }
@@ -169,8 +197,11 @@ function renderHistory() {
   }
   elHistoryList.innerHTML = state.history.map((h) => `
     <div class="history-item">
-      <span class="history-icon">${h.icon}</span>
-      <span class="history-time">${h.time}</span>
+      <span class="history-icon threat-${threatSevClass(h.type)}">${getThreatSvg(h.type)}</span>
+      <span class="history-datetime">
+        <span class="history-time">${h.time}</span>
+        <span class="history-date">${h.date || ""}</span>
+      </span>
       <span class="history-text">${h.text}</span>
     </div>
   `).join("");
@@ -193,9 +224,9 @@ function processApiHistory(payload) {
     if (state.shownHistoryIds.has(key)) continue;
     state.shownHistoryIds.add(key);
 
-    const ts   = Date.parse(item.timestamp) || 0;
-    const icon = alertSeverity(item.type) === "alert" ? "🔴" : "🟠";
-    state.history.push({ _ts: ts, time: timeStr(new Date(ts)), icon, text: item.instructions });
+    const ts = Date.parse(item.timestamp) || 0;
+    const d  = new Date(ts);
+    state.history.push({ _ts: ts, time: timeStr(d), date: dateStr(d), type: item.type, text: item.instructions });
     added++;
   }
 
@@ -378,7 +409,7 @@ function processPayload(payload) {
     // Only transition if severity is higher or status is currently normal/ended
     if (state.status === "normal" || state.status === "ended" ||
         (state.status === "warning" && sev === "alert")) {
-      setStatus(sev, cities, worst.instructions);
+      setStatus(sev, cities, worst.instructions, worst.type);
     } else if (state.status === sev) {
       // update cities display without re-triggering tone
       elStatusCities.textContent = cities.slice(0, 6).join(" • ");
