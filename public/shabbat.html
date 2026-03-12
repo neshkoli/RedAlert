@@ -41,10 +41,11 @@
         </div>
         <div id="setup-drawer" class="open">
           <div class="setup-row">
-            <label for="city-select">עיר:</label>
-            <select id="city-select">
-              <option value="">-- בחר עיר --</option>
-            </select>
+            <label for="city-input">עיר:</label>
+            <input type="text" id="city-input" list="city-options"
+                   placeholder="הקלד שם עיר..." autocomplete="off"
+                   autocorrect="off" spellcheck="false" />
+            <datalist id="city-options"></datalist>
           </div>
           <button id="audio-unlock-btn" type="button">הפעל שמע</button>
         </div>

@@ -237,7 +237,7 @@ body.status-warning #status-box {
   flex-shrink: 0;
 }
 
-#city-select {
+#city-input {
   flex: 1;
   font-size: 0.85rem;
   padding: 6px 8px;
@@ -246,7 +246,7 @@ body.status-warning #status-box {
   background-color: rgba(255, 255, 255, 0.9);
   color: #111;
   direction: rtl;
-  -webkit-appearance: none;
+  min-width: 0;
 }
 
 #audio-unlock-btn {

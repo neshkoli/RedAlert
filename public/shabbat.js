@@ -48,7 +48,8 @@ const elStatusTitle  = $("status-title");
 const elStatusSub    = $("status-subtitle");
 const elStatusCities = $("status-cities");
 const elHistoryList  = $("history-list");
-const elCitySelect   = $("city-select");
+const elCityInput    = $("city-input");
+const elCityOptions  = $("city-options");
 const elAudioBtn     = $("audio-unlock-btn");
 const elConnStatus   = $("conn-status");
 const elSetupBar     = $("setup-bar");
@@ -181,34 +182,20 @@ function processApiHistory(payload) {
   if (!state.city || !Array.isArray(payload.history) || payload.history.length === 0) return;
 
   const needle = normName(state.city).toLowerCase();
-  const groups = new Map(); // id → { _ts, type, instructions, cities[] }
+  let added = 0;
 
   for (const item of payload.history) {
     if (!Array.isArray(item.cities) || item.cities.length === 0) continue;
-    const match = item.cities.some((c) => normName(c).toLowerCase() === needle);
-    if (!match) continue;
+    if (!item.cities.some((c) => normName(c).toLowerCase() === needle)) continue;
 
-    const id = String(item.id || item.timestamp);
-    const ts = Date.parse(item.timestamp) || 0;
+    // One entry per individual API row — key by timestamp+id+type to deduplicate across polls
+    const key = `${item.timestamp}_${item.id}_${item.type}`;
+    if (state.shownHistoryIds.has(key)) continue;
+    state.shownHistoryIds.add(key);
 
-    if (!groups.has(id)) {
-      groups.set(id, { _ts: ts, type: item.type, instructions: item.instructions, cities: [...item.cities] });
-    } else {
-      const g = groups.get(id);
-      if (ts > g._ts) g._ts = ts;
-      for (const c of item.cities) {
-        if (!g.cities.includes(c)) g.cities.push(c);
-      }
-    }
-  }
-
-  let added = 0;
-  for (const [id, g] of groups) {
-    if (state.shownHistoryIds.has(id)) continue;
-    state.shownHistoryIds.add(id);
-    const icon = alertSeverity(g.type) === "alert" ? "🔴" : "🟠";
-    const date = new Date(g._ts);
-    state.history.push({ _ts: g._ts, time: timeStr(date), icon, text: g.instructions + " — " + g.cities.slice(0, 4).join(", ") });
+    const ts   = Date.parse(item.timestamp) || 0;
+    const icon = alertSeverity(item.type) === "alert" ? "🔴" : "🟠";
+    state.history.push({ _ts: ts, time: timeStr(new Date(ts)), icon, text: item.instructions });
     added++;
   }
 
@@ -305,39 +292,57 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ===== City selector =====
+let _validCities = [];
+
 async function loadCities() {
   try {
     const res  = await fetch(ZONES_URL);
     const data = await res.json();
-    const cities = (data.cities || []).map((c) => normName(c.name)).filter(Boolean).sort();
-    cities.forEach((name) => {
+    _validCities = (data.cities || []).map((c) => normName(c.name)).filter(Boolean).sort();
+    _validCities.forEach((name) => {
       const opt = document.createElement("option");
       opt.value = name;
-      opt.textContent = name;
-      elCitySelect.appendChild(opt);
+      elCityOptions.appendChild(opt);
     });
     // Restore saved city
     const saved = localStorage.getItem(STORAGE_CITY);
-    if (saved) {
-      elCitySelect.value = saved;
-      state.city = saved;
-      elSetupBarCity.textContent = "עיר: " + saved;
+    if (saved && _validCities.includes(saved)) {
+      elCityInput.value = saved;
+      applyCity(saved);
     }
   } catch (e) {
     console.error("Failed to load cities:", e);
   }
 }
 
-elCitySelect.addEventListener("change", () => {
-  state.city = elCitySelect.value;
-  localStorage.setItem(STORAGE_CITY, state.city);
-  elStatusCities.textContent = state.city;
-  elSetupBarCity.textContent = state.city ? "עיר: " + state.city : "⚙ הגדרות";
+function applyCity(name) {
+  state.city = name;
+  localStorage.setItem(STORAGE_CITY, name);
+  elStatusCities.textContent = name;
+  elSetupBarCity.textContent = name ? "עיר: " + name : "⚙ הגדרות";
   // Reset history and re-load from last payload for new city
   state.history = [];
   state.shownHistoryIds.clear();
   renderHistory();
   if (state._lastPayload) processPayload(state._lastPayload);
+}
+
+// Fires when user picks from datalist or leaves field
+elCityInput.addEventListener("change", () => {
+  const typed = normName(elCityInput.value);
+  // Accept only exact matches (case-insensitive) from the valid list
+  const match = _validCities.find((c) => c.toLowerCase() === typed.toLowerCase());
+  if (match) {
+    elCityInput.value = match;
+    applyCity(match);
+  }
+});
+
+// Also react while typing — if text exactly matches a city, apply immediately
+elCityInput.addEventListener("input", () => {
+  const typed = normName(elCityInput.value);
+  const match = _validCities.find((c) => c.toLowerCase() === typed.toLowerCase());
+  if (match) applyCity(match);
 });
 
 // ===== Alert processing =====
