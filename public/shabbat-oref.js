@@ -319,7 +319,9 @@ function parseHistoryJson(json) {
     if (!item.alertDate || !item.data || !item.category) continue;
 
     // Timezone is Asia/Jerusalem — rely on JS Date parsing (oref sends local time strings)
-    const unix = new Date(item.alertDate).getTime() / 1000;
+    const parsed = new Date(item.alertDate);
+    if (isNaN(parsed.getTime())) continue;   // skip items with unparseable dates
+    const unix = parsed.getTime() / 1000;
     if (nowUnix - unix > HISTORY_MAX_AGE_S) continue;
 
     const city = normName(item.data);
