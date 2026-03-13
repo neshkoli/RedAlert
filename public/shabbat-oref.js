@@ -400,11 +400,17 @@ function processApiHistory(histAlerts) {
 }
 
 // ===== Main poll =====
+// Track consecutive history failures for backoff (don't spam the worker when it's down)
+let _historyFailCount = 0;
+let _historySkipUntil = 0;
+
 async function poll() {
   try {
+    const skipHistory = Date.now() < _historySkipUntil;
+
     const [alertsResult, historyResult] = await Promise.allSettled([
       fetchOrefJson(ALERTS_URL),
-      fetchOrefJson(HISTORY_URL),
+      skipHistory ? Promise.reject(new Error("backoff")) : fetchOrefJson(HISTORY_URL),
     ]);
 
     let liveAlerts = [];
@@ -415,7 +421,6 @@ async function poll() {
       if (json === null) {
         // Empty response = no active alert (check history for recent ones)
       } else if (Array.isArray(json)) {
-        // Alerts.json returned an array — shouldn't happen but handle gracefully
         liveAlerts = [];
       } else {
         liveAlerts = parseAlertsJson(json);
@@ -426,8 +431,13 @@ async function poll() {
 
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) {
       histAlerts = parseHistoryJson(historyResult.value);
-    } else if (historyResult.status === "rejected") {
-      console.warn("[oref] AlertsHistory.json fetch failed:", historyResult.reason);
+      _historyFailCount = 0; // reset on success
+    } else if (historyResult.status === "rejected" && !skipHistory) {
+      _historyFailCount++;
+      // Exponential backoff: 10s, 20s, 40s, 80s, capped at 120s
+      const backoffMs = Math.min(10_000 * Math.pow(2, _historyFailCount - 1), 120_000);
+      _historySkipUntil = Date.now() + backoffMs;
+      console.warn(`[oref] History fetch failed (attempt ${_historyFailCount}), backing off ${backoffMs / 1000}s:`, historyResult.reason.message || historyResult.reason);
     }
 
     updateConnStatus(true);
