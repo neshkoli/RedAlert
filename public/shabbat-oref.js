@@ -635,7 +635,7 @@ init();
 // ===== RSS Panel =====
 const STORAGE_RSS_URL     = "shabbat_rss_url_v1";
 const STORAGE_RSS_VISIBLE = "shabbat_rss_visible_v1";
-const RSS_POLL_MS         = 5 * 60 * 1000;   // refresh every 5 minutes
+const RSS_POLL_MS         = 60 * 1000;        // refresh every minute
 const RSS_MAX_AGE_MS      = 12 * 60 * 60 * 1000; // show items from last 12 hours
 const RSS_DEFAULT_URL     = "https://www.ynet.co.il/Integration/StoryRss1854.xml";
 // CORS proxy — returns raw XML via ?url=
@@ -676,8 +676,7 @@ function renderRssItems() {
   if (rssState.items.length === 0) {
     elRssList.innerHTML = '<div class="rss-empty">אין פריטים להצגה</div>';
     return;
-  }
-  elRssList.innerHTML = rssState.items.map((item) => {
+  }  elRssList.innerHTML = rssState.items.map((item) => {
     const d = item.pubDate ? new Date(item.pubDate) : null;
     const time = d && !isNaN(d) ? rssTimeStr(d) : "";
     const date = d && !isNaN(d) ? rssDateStr(d) : "";
@@ -731,12 +730,19 @@ function parseRssXml(xmlText) {
 
 async function fetchRss() {
   if (!rssState.url) return;
+
+  // Show loading indicator only on first load (no items yet)
+  if (rssState.items.length === 0) {
+    elRssList.innerHTML = '<div class="rss-empty rss-loading">טוען חדשות…</div>';
+  }
+
   try {
     const proxyUrl = RSS_CORS_PROXY + encodeURIComponent(rssState.url);
     const res      = await fetch(proxyUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json     = await res.json();
     const xmlText  = json && json.contents ? json.contents : "";
-    if (!xmlText) return;
+    if (!xmlText) throw new Error("empty response");
 
     const { feedTitle, items } = parseRssXml(xmlText);
 
@@ -746,6 +752,9 @@ async function fetchRss() {
     resetRssScroll();
   } catch (e) {
     console.warn("[rss] fetch failed:", e);
+    if (rssState.items.length === 0) {
+      elRssList.innerHTML = '<div class="rss-empty">שגיאה בטעינת החדשות — מנסה שוב בעוד דקה</div>';
+    }
   }
 }
 

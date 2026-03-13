@@ -549,6 +549,16 @@ body.status-warning #status-box {
   padding: 20px 10px;
 }
 
+.rss-loading {
+  opacity: 0.75;
+  animation: rss-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes rss-blink {
+  0%, 100% { opacity: 0.75; }
+  50%       { opacity: 0.35; }
+}
+
 /* Show RSS button in setup bar */
 #rss-show-btn {
   background: transparent;
